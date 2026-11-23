@@ -718,7 +718,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
         {/* Live HUD Stats */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#0E0E0E] border border-white/10">
-            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+            <span className="text-xs leading-none select-none" role="img" aria-label="diamonds">💎</span>
             <span className="font-bold text-white text-xs">
               {liveHud.diamonds}
             </span>
