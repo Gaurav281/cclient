@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://firebackend-4k60.onrender.com' : '')
+).replace(/\/+$/, '');
 
 export const getAuthToken = () => {
   return localStorage.getItem('car_token') || '';

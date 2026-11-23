@@ -7,6 +7,7 @@ import {
   Clock,
   Gamepad2,
   ChevronRight,
+  Play,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/useAuthStore.js';
@@ -97,6 +98,29 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
 
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
+      {/* Top Practice Car Game Button */}
+      <button
+        onClick={() => {
+          haptic.light();
+          navigate('/play');
+        }}
+        className="w-full py-2.5 px-3.5 rounded-2xl bg-[#0E0E0E] border border-white/10 hover:border-sky-400/40 active:scale-[0.98] transition flex items-center justify-between group"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-400">
+            <Gamepad2 className="w-4 h-4" />
+          </div>
+          <span className="font-heading font-bold text-white text-sm">
+            Practice Car Game
+          </span>
+        </div>
+
+        <div className="px-3 py-1 rounded-xl bg-sky-400 text-black font-heading font-bold text-xs tracking-wider uppercase flex items-center gap-1 group-hover:bg-sky-300 transition">
+          <Play className="w-3 h-3 fill-black" />
+          <span>Practice</span>
+        </div>
+      </button>
+
       {/* Premium Neutral Filter Tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0E0E0E] border border-white/10">
         {[

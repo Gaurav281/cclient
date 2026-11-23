@@ -7,6 +7,7 @@ import { CarGame } from '../components/game/CarGame.jsx';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { useAuthStore } from '../store/useAuthStore.js';
+import { Loader2 } from 'lucide-react';
 
 export const PlayGamePage = () => {
   const { tournamentId } = useParams();
@@ -64,6 +65,17 @@ export const PlayGamePage = () => {
       navigate('/');
     }
   };
+
+  if (tournamentId && !tournamentData) {
+    return (
+      <div className="w-full h-[100dvh] bg-black flex items-center justify-center">
+        <div className="flex items-center gap-2 text-sky-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="font-medium text-sm text-neutral-300">Loading Tournament...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <CarGame

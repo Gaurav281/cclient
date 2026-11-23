@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Volume2, VolumeX, Sparkles, Trophy, ArrowLeft, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, Trophy, ArrowLeft, RotateCcw, AlertTriangle, Loader2 } from 'lucide-react';
 import { soundManager } from './SoundManager.js';
 import { useTelegram } from '../../store/useTelegram.js';
 
@@ -82,6 +82,45 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       else moveLane('left');
     }
   };
+
+  // Directly submit score when user gets out
+  const submitScoreDirectly = useCallback(
+    async (finalScore, finalDiamonds, finalDistance) => {
+      if (!tournament) return;
+
+      const scoreToSubmit = finalScore ?? stateRef.current.score;
+      const diamondsToSubmit = finalDiamonds ?? stateRef.current.diamondsCollected;
+      const distanceToSubmit = finalDistance ?? Math.floor(stateRef.current.distance);
+
+      setGameState((prev) => ({ ...prev, isSubmitting: true }));
+      try {
+        const res = await onScoreSubmit?.({
+          tournamentId: tournament?._id || null,
+          score: scoreToSubmit,
+          diamondsCollected: diamondsToSubmit,
+          distance: distanceToSubmit,
+        });
+
+        setGameState((prev) => ({
+          ...prev,
+          isSubmitting: false,
+          submissionResult: res,
+        }));
+      } catch (err) {
+        setGameState((prev) => ({
+          ...prev,
+          isSubmitting: false,
+          submissionResult: { error: err.message || 'Failed to submit score' },
+        }));
+      }
+    },
+    [tournament, onScoreSubmit]
+  );
+
+  const submitRef = useRef(submitScoreDirectly);
+  useEffect(() => {
+    submitRef.current = submitScoreDirectly;
+  }, [submitScoreDirectly]);
 
   // Keyboard controls
   useEffect(() => {
@@ -237,14 +276,23 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
               });
             }
 
+            const finalScore = s.score;
+            const finalDiamonds = s.diamondsCollected;
+            const finalDistance = Math.floor(s.distance);
+
             setGameState({
-              score: s.score,
-              diamonds: s.diamondsCollected,
-              distance: Math.floor(s.distance),
+              score: finalScore,
+              diamonds: finalDiamonds,
+              distance: finalDistance,
               isGameOver: true,
-              isSubmitting: false,
+              isSubmitting: Boolean(tournament),
               submissionResult: null,
             });
+
+            // If in a tournament, automatically submit score directly when user gets out
+            if (tournament) {
+              submitRef.current?.(finalScore, finalDiamonds, finalDistance);
+            }
             break;
           }
 
@@ -510,33 +558,6 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     };
   }, []);
 
-  // Handle Score Submission when Game Over
-  const handleScoreSubmit = async () => {
-    if (gameState.isSubmitting) return;
-
-    setGameState((prev) => ({ ...prev, isSubmitting: true }));
-    try {
-      const res = await onScoreSubmit?.({
-        tournamentId: tournament?._id || null,
-        score: stateRef.current.score,
-        diamondsCollected: stateRef.current.diamondsCollected,
-        distance: Math.floor(stateRef.current.distance),
-      });
-
-      setGameState((prev) => ({
-        ...prev,
-        isSubmitting: false,
-        submissionResult: res,
-      }));
-    } catch (err) {
-      setGameState((prev) => ({
-        ...prev,
-        isSubmitting: false,
-        submissionResult: { error: err.message },
-      }));
-    }
-  };
-
   const handleRestart = () => {
     const s = stateRef.current;
     s.isRunning = true;
@@ -560,6 +581,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       submissionResult: null,
     });
   };
+
+  const displayTurns = gameState.submissionResult?.turnsLeft ?? turnsLeft;
 
   return (
     <div className="relative w-full h-[100dvh] bg-black flex flex-col items-center justify-between overflow-hidden select-none touch-none">
@@ -587,9 +610,9 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
             </span>
           </div>
 
-          {turnsLeft !== null && (
+          {displayTurns !== null && (
             <div className="px-2.5 py-1.5 rounded-xl bg-[#0E0E0E] border border-amber-500/30 text-amber-300 text-xs font-semibold">
-              Turns: {turnsLeft}
+              Turns: {displayTurns}
             </div>
           )}
         </div>
@@ -665,28 +688,45 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
               </div>
             </div>
 
-            {/* Submission / Status */}
-            {tournament && !gameState.submissionResult && (
-              <button
-                onClick={handleScoreSubmit}
-                disabled={gameState.isSubmitting}
-                className="w-full py-3 rounded-2xl blue-gradient-btn font-bold text-black text-sm tracking-wider flex items-center justify-center gap-2"
-              >
-                <Trophy className="w-4 h-4 text-black" />
-                {gameState.isSubmitting ? 'Submitting...' : 'Submit to Leaderboard'}
-              </button>
+            {/* Automatic Score Submission in Tournament */}
+            {tournament && gameState.isSubmitting && (
+              <div className="p-3 rounded-xl bg-[#141414] border border-white/10 text-xs flex items-center justify-center gap-2 text-sky-400">
+                <Loader2 className="w-4 h-4 animate-spin text-sky-400" />
+                <span className="font-semibold text-white">Submitting score...</span>
+              </div>
             )}
 
-            {gameState.submissionResult && (
+            {tournament && gameState.submissionResult && (
               <div className="p-2.5 rounded-xl bg-[#141414] border border-white/10 text-xs">
                 {gameState.submissionResult.error ? (
-                  <span className="text-red-400">{gameState.submissionResult.error}</span>
+                  <div className="space-y-1.5">
+                    <span className="text-red-400 font-medium block">
+                      {gameState.submissionResult.error}
+                    </span>
+                    <button
+                      onClick={() =>
+                        submitRef.current?.(
+                          gameState.score,
+                          gameState.diamonds,
+                          gameState.distance
+                        )
+                      }
+                      className="px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 font-semibold text-xs active:scale-95 transition"
+                    >
+                      Retry Submission
+                    </button>
+                  </div>
                 ) : (
                   <div className="space-y-0.5">
                     <p className="text-emerald-400 font-bold">Score submitted!</p>
                     {gameState.submissionResult.rank && (
                       <p className="text-amber-300 font-semibold">
                         Rank #{gameState.submissionResult.rank}
+                      </p>
+                    )}
+                    {gameState.submissionResult.turnsLeft !== undefined && (
+                      <p className="text-neutral-400 text-[11px]">
+                        Turns remaining: {gameState.submissionResult.turnsLeft}
                       </p>
                     )}
                   </div>
@@ -698,7 +738,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
               {(!tournament || (gameState.submissionResult?.turnsLeft > 0)) && (
                 <button
                   onClick={handleRestart}
-                  className="flex-1 py-2.5 rounded-xl bg-[#1E1E1E] border border-white/15 text-white font-bold text-xs uppercase tracking-wider hover:bg-neutral-800 transition flex items-center justify-center gap-1.5"
+                  disabled={gameState.isSubmitting}
+                  className="flex-1 py-2.5 rounded-xl bg-[#1E1E1E] border border-white/15 text-white font-bold text-xs uppercase tracking-wider hover:bg-neutral-800 disabled:opacity-40 transition flex items-center justify-center gap-1.5"
                 >
                   <RotateCcw className="w-4 h-4 text-sky-400" /> Play Again
                 </button>
@@ -706,7 +747,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
 
               <button
                 onClick={onExit}
-                className="flex-1 py-2.5 rounded-xl bg-[#141414] border border-white/10 text-neutral-300 font-bold text-xs uppercase tracking-wider hover:bg-neutral-800 transition"
+                disabled={gameState.isSubmitting}
+                className="flex-1 py-2.5 rounded-xl bg-[#141414] border border-white/10 text-neutral-300 font-bold text-xs uppercase tracking-wider hover:bg-neutral-800 disabled:opacity-40 transition"
               >
                 Exit
               </button>
