@@ -18,11 +18,11 @@ export default {
           600: '#404040',
         },
         sky: {
-          500: '#0EA5E9',
-          400: '#38BDF8',
-          300: '#7DD3FC',
-          200: '#BAE6FD',
-          100: '#E0F2FE',
+          500: 'rgb(var(--color-primary-rgb) / <alpha-value>)',
+          400: 'rgb(var(--color-primary-rgb) / <alpha-value>)',
+          300: 'rgb(var(--color-primary-hover-rgb) / <alpha-value>)',
+          200: 'rgb(var(--color-primary-rgb) / 0.65)',
+          100: 'rgb(var(--color-primary-rgb) / 0.35)',
         },
       },
       boxShadow: {

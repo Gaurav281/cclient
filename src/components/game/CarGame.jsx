@@ -1,11 +1,38 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Volume2, VolumeX, Sparkles, Trophy, ArrowLeft, RotateCcw, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  Volume2,
+  VolumeX,
+  Sparkles,
+  Trophy,
+  ArrowLeft,
+  RotateCcw,
+  AlertTriangle,
+  Loader2,
+  Pause,
+  Play,
+  Settings,
+  X,
+  Check,
+} from 'lucide-react';
 import { soundManager } from './SoundManager.js';
 import { useTelegram } from '../../store/useTelegram.js';
+import { useThemeStore } from '../../store/useThemeStore.js';
 
 export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null }) => {
   const canvasRef = useRef(null);
   const { haptic } = useTelegram();
+
+  // Control settings: 'buttons' | 'screen_click'
+  const [controlType, setControlType] = useState(() => {
+    try {
+      return localStorage.getItem('firefly_controls') || 'buttons';
+    } catch (e) {
+      return 'buttons';
+    }
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
 
   // Game state refs (for 60fps loop without stale closures)
   const stateRef = useRef({
@@ -48,10 +75,37 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     haptic.selection();
   };
 
+  const togglePause = useCallback(() => {
+    if (stateRef.current.isGameOver) return;
+    setIsPaused((prev) => {
+      const next = !prev;
+      isPausedRef.current = next;
+      return next;
+    });
+    haptic.selection();
+  }, [haptic]);
+
+  const openSettings = useCallback(() => {
+    if (stateRef.current.isRunning && !stateRef.current.isGameOver) {
+      setIsPaused(true);
+      isPausedRef.current = true;
+    }
+    setIsSettingsOpen(true);
+    haptic.selection();
+  }, [haptic]);
+
+  const handleSelectControlType = (type) => {
+    setControlType(type);
+    try {
+      localStorage.setItem('firefly_controls', type);
+    } catch (e) {}
+    haptic.selection();
+  };
+
   // Change lane handler
   const moveLane = useCallback((direction) => {
     const s = stateRef.current;
-    if (!s.isRunning || s.isGameOver) return;
+    if (!s.isRunning || s.isGameOver || isPausedRef.current) return;
 
     if (direction === 'left' && s.playerLane > 0) {
       s.playerLane -= 1;
@@ -66,7 +120,26 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     }
   }, [haptic]);
 
-  // Touch Swipe gestures
+  // Handle direct lane tap (for screen click / tap mode)
+  const handleLaneTap = useCallback((clientX) => {
+    const s = stateRef.current;
+    if (!s.isRunning || s.isGameOver || isPausedRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = clientX - rect.left;
+    const laneWidth = rect.width / 3;
+    const targetLane = Math.min(2, Math.max(0, Math.floor(clickX / laneWidth)));
+
+    if (targetLane !== s.playerLane) {
+      s.tilt = targetLane > s.playerLane ? 0.15 : -0.15;
+      s.playerLane = targetLane;
+      soundManager.playLaneChange();
+      haptic.light();
+    }
+  }, [haptic]);
+
+  // Touch Swipe gestures & Tap
   const touchStartRef = useRef({ x: 0, y: 0 });
 
   const handleTouchStart = (e) => {
@@ -79,9 +152,11 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     const dx = touch.clientX - touchStartRef.current.x;
     const dy = touch.clientY - touchStartRef.current.y;
 
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 25) {
       if (dx > 0) moveLane('right');
       else moveLane('left');
+    } else if (controlType === 'screen_click' && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+      handleLaneTap(touch.clientX);
     }
   };
 
@@ -133,12 +208,15 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         moveLane('right');
+      } else if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        e.preventDefault();
+        togglePause();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [moveLane]);
+  }, [moveLane, togglePause]);
 
   // Main Game Loop & Canvas Lifecycle
   useEffect(() => {
@@ -183,6 +261,12 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     let lastReportedDiamonds = -1;
 
     const loop = (currentTime) => {
+      if (isPausedRef.current) {
+        lastTime = currentTime;
+        animId = requestAnimationFrame(loop);
+        return;
+      }
+
       const dt = (currentTime - lastTime) / 1000;
       lastTime = currentTime;
 
@@ -376,8 +460,13 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, width, height);
 
+      // Active Theme Dynamic Colors
+      const activeTheme = useThemeStore.getState().themeConfig;
+      const themePrimary = activeTheme?.hex || '#38BDF8';
+      const themeHover = activeTheme?.hoverHex || '#0284C7';
+
       // Cyber grid & clean road edges
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.strokeStyle = themePrimary;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(2, 0);
@@ -471,8 +560,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
 
       // Headlight beams
       const beamGrad = ctx.createLinearGradient(0, -carH / 2, 0, -carH / 2 - 130);
-      beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
-      beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      beamGrad.addColorStop(0, themePrimary + '55');
+      beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = beamGrad;
       ctx.beginPath();
@@ -491,7 +580,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
 
       // Exhaust Boost Flames
       const flameH = 12 + Math.random() * 8;
-      ctx.fillStyle = '#38BDF8';
+      ctx.fillStyle = themePrimary;
       ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.moveTo(-carW * 0.28, carH / 2);
@@ -512,11 +601,11 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       ctx.roundRect(-carW / 2 - 4, -carH / 2 + 6, carW + 8, carH, 10);
       ctx.fill();
 
-      // Futuristic Main Chassis (Light Blue metallic)
+      // Futuristic Main Chassis (Dynamic Accent Theme)
       const bodyGrad = ctx.createLinearGradient(-carW / 2, 0, carW / 2, 0);
-      bodyGrad.addColorStop(0, '#0284C7');
-      bodyGrad.addColorStop(0.5, '#38BDF8');
-      bodyGrad.addColorStop(1, '#0284C7');
+      bodyGrad.addColorStop(0, themeHover);
+      bodyGrad.addColorStop(0.5, themePrimary);
+      bodyGrad.addColorStop(1, themeHover);
 
       ctx.fillStyle = bodyGrad;
       ctx.beginPath();
@@ -573,6 +662,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   }, []);
 
   const handleRestart = () => {
+    setIsPaused(false);
+    isPausedRef.current = false;
     const s = stateRef.current;
     s.isRunning = true;
     s.isGameOver = false;
@@ -602,71 +693,235 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   return (
     <div className="relative w-full h-[100dvh] bg-black flex flex-col items-center justify-between overflow-hidden select-none touch-none">
       {/* Top Game Header */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/90 to-transparent">
-        <button
-          onClick={onExit}
-          className="p-2 rounded-xl bg-[#0E0E0E] border border-white/10 text-neutral-300 active:scale-95 transition"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2.5 bg-gradient-to-b from-black/95 to-transparent">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onExit}
+            className="p-2 rounded-xl bg-[#0E0E0E] border border-white/10 text-neutral-300 active:scale-95 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={togglePause}
+            className="p-2 rounded-xl bg-[#0E0E0E] border border-white/10 text-neutral-300 hover:text-white active:scale-95 transition"
+            title={isPaused ? 'Resume' : 'Pause'}
+          >
+            {isPaused ? (
+              <Play className="w-4 h-4 text-sky-400 fill-current" />
+            ) : (
+              <Pause className="w-4 h-4 text-neutral-300" />
+            )}
+          </button>
+        </div>
 
         {/* Live HUD Stats */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0E0E0E] border border-white/10">
-            <Sparkles className="w-4 h-4 text-sky-400" />
-            <span className="font-bold text-white text-sm">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#0E0E0E] border border-white/10">
+            <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+            <span className="font-bold text-white text-xs">
               {liveHud.diamonds}
             </span>
           </div>
 
-          <div className="px-3 py-1.5 rounded-xl bg-[#141414] border border-white/10">
-            <span className="font-extrabold text-sky-400 text-sm tracking-wide">
-              {liveHud.score} PTS
+          <div className="px-2.5 py-1.5 rounded-xl bg-[#141414] border border-white/10">
+            <span className="font-extrabold text-sky-400 text-xs tracking-wide">
+              {liveHud.score}
             </span>
           </div>
 
           {displayTurns !== null && (
-            <div className="px-2.5 py-1.5 rounded-xl bg-[#0E0E0E] border border-amber-500/30 text-amber-300 text-xs font-semibold">
-              Turns: {displayTurns}
+            <div className="px-2 py-1.5 rounded-xl bg-[#0E0E0E] border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
+              T:{displayTurns}
             </div>
           )}
         </div>
 
-        <button
-          onClick={toggleSound}
-          className="p-2 rounded-xl bg-[#0E0E0E] border border-white/10 text-neutral-300 active:scale-95 transition"
-        >
-          {isMuted ? <VolumeX className="w-5 h-5 text-neutral-500" /> : <Volume2 className="w-5 h-5 text-sky-400" />}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={openSettings}
+            className="p-2 rounded-xl bg-[#0E0E0E] border border-white/10 text-neutral-300 hover:text-white active:scale-95 transition"
+            title="Controls Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={toggleSound}
+            className="p-2 rounded-xl bg-[#0E0E0E] border border-white/10 text-neutral-300 active:scale-95 transition"
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-neutral-500" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-sky-400" />
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Main Game Canvas */}
       <div
-        className="w-full flex-1 relative flex items-center justify-center"
+        className="w-full flex-1 relative flex items-center justify-center cursor-pointer"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onClick={(e) => {
+          if (controlType === 'screen_click') {
+            handleLaneTap(e.clientX);
+          }
+        }}
       >
         <canvas ref={canvasRef} className="w-full h-full block" />
       </div>
 
-      {/* Bottom Lane Controls */}
-      <div className="w-full max-w-md px-6 pb-6 pt-2 z-20 flex items-center justify-between gap-4">
-        <button
-          onClick={() => moveLane('left')}
-          className="flex-1 py-4 rounded-2xl bg-[#0E0E0E] border border-white/10 active:scale-95 active:bg-[#181818] transition flex items-center justify-center gap-2"
-        >
-          <span className="text-2xl font-bold text-white">←</span>
-          <span className="font-bold tracking-wider text-sm text-sky-400">LEFT</span>
-        </button>
+      {/* Bottom Controls / Lane Guide */}
+      {controlType === 'buttons' ? (
+        <div className="w-full max-w-md px-6 pb-6 pt-2 z-20 flex items-center justify-between gap-4">
+          <button
+            onClick={() => moveLane('left')}
+            className="flex-1 py-4 rounded-2xl bg-[#0E0E0E] border border-white/10 active:scale-95 active:bg-[#181818] transition flex items-center justify-center gap-2"
+          >
+            <span className="text-2xl font-bold text-white">←</span>
+            <span className="font-bold tracking-wider text-sm text-sky-400">LEFT</span>
+          </button>
 
-        <button
-          onClick={() => moveLane('right')}
-          className="flex-1 py-4 rounded-2xl bg-[#0E0E0E] border border-white/10 active:scale-95 active:bg-[#181818] transition flex items-center justify-center gap-2"
-        >
-          <span className="font-bold tracking-wider text-sm text-sky-400">RIGHT</span>
-          <span className="text-2xl font-bold text-white">→</span>
-        </button>
-      </div>
+          <button
+            onClick={() => moveLane('right')}
+            className="flex-1 py-4 rounded-2xl bg-[#0E0E0E] border border-white/10 active:scale-95 active:bg-[#181818] transition flex items-center justify-center gap-2"
+          >
+            <span className="font-bold tracking-wider text-sm text-sky-400">RIGHT</span>
+            <span className="text-2xl font-bold text-white">→</span>
+          </button>
+        </div>
+      ) : (
+        <div className="w-full max-w-md px-4 pb-5 pt-1 z-20 grid grid-cols-3 gap-2 text-neutral-500 text-[10px] font-mono select-none">
+          <div
+            onClick={() => moveLane('left')}
+            className="py-2.5 rounded-xl bg-[#0E0E0E]/80 border border-white/5 text-center active:bg-white/10 transition cursor-pointer"
+          >
+            ◀ LEFT
+          </div>
+          <div
+            onClick={() => {
+              const s = stateRef.current;
+              if (s.playerLane !== 1) {
+                s.tilt = 1 > s.playerLane ? 0.15 : -0.15;
+                s.playerLane = 1;
+                soundManager.playLaneChange();
+                haptic.light();
+              }
+            }}
+            className="py-2.5 rounded-xl bg-[#0E0E0E]/80 border border-white/5 text-center active:bg-white/10 transition cursor-pointer"
+          >
+            CENTER
+          </div>
+          <div
+            onClick={() => moveLane('right')}
+            className="py-2.5 rounded-xl bg-[#0E0E0E]/80 border border-white/5 text-center active:bg-white/10 transition cursor-pointer"
+          >
+            RIGHT ▶
+          </div>
+        </div>
+      )}
+
+      {/* Paused Overlay Modal */}
+      {isPaused && !gameState.isGameOver && !isSettingsOpen && (
+        <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+          <div className="w-full max-w-xs rounded-2xl p-5 bg-[#0E0E0E] border border-white/10 text-center space-y-4">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-400">
+              <Pause className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="font-heading font-bold text-lg text-white">Game Paused</h3>
+              <p className="text-xs text-neutral-400 mt-1">
+                💎 {liveHud.diamonds} diamonds • {liveHud.score} pts
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={togglePause}
+                className="w-full py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <Play className="w-4 h-4 fill-current" /> Resume Game
+              </button>
+
+              <button
+                onClick={openSettings}
+                className="w-full py-2 rounded-xl bg-[#141414] border border-white/10 text-neutral-300 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <Settings className="w-3.5 h-3.5" /> Controls Settings
+              </button>
+
+              <button
+                onClick={onExit}
+                className="w-full py-2 rounded-xl bg-[#141414] border border-white/10 text-neutral-400 hover:text-white font-medium text-xs transition active:scale-95"
+              >
+                Exit Game
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Controls Settings Modal */}
+      {isSettingsOpen && (
+        <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+          <div className="w-full max-w-xs rounded-2xl p-5 bg-[#0E0E0E] border border-white/10 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-sky-400" />
+                <h3 className="font-heading font-bold text-sm text-white">Controls</h3>
+              </div>
+              <button
+                onClick={() => setIsSettingsOpen(false)}
+                className="p-1 rounded text-neutral-400 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => handleSelectControlType('buttons')}
+                className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition ${
+                  controlType === 'buttons'
+                    ? 'bg-[#181818] border-sky-400/50 ring-1 ring-sky-400/30'
+                    : 'bg-[#121212] border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div>
+                  <div className="text-xs font-bold text-white">Bottom Buttons</div>
+                  <div className="text-[11px] text-neutral-400 mt-0.5">Left & Right tap buttons</div>
+                </div>
+                {controlType === 'buttons' && <Check className="w-4 h-4 text-sky-400 stroke-[3]" />}
+              </button>
+
+              <button
+                onClick={() => handleSelectControlType('screen_click')}
+                className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition ${
+                  controlType === 'screen_click'
+                    ? 'bg-[#181818] border-sky-400/50 ring-1 ring-sky-400/30'
+                    : 'bg-[#121212] border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div>
+                  <div className="text-xs font-bold text-white">Screen Tap (Tap Lane)</div>
+                  <div className="text-[11px] text-neutral-400 mt-0.5">Tap any of 3 lanes directly</div>
+                </div>
+                {controlType === 'screen_click' && <Check className="w-4 h-4 text-sky-400 stroke-[3]" />}
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsSettingsOpen(false)}
+              className="w-full py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wide transition active:scale-95"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Game Over Modal Overlay */}
       {gameState.isGameOver && (

@@ -6,10 +6,12 @@ import {
   ArrowLeft,
   Trophy,
   Gamepad2,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/useAuthStore.js';
 import { useTelegram } from '../store/useTelegram.js';
+import { adminApi } from '../api/adminApi.js';
 
 export const TournamentDetailPage = ({ onOpenDeposit }) => {
   const { tournamentId } = useParams();
@@ -44,6 +46,22 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
       }
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => adminApi.deleteTournament(tournamentId),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Tournament deleted');
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      navigate('/');
+    },
+    onError: (err) => toast.error(err.message || 'Failed to delete tournament'),
+  });
+
+  const handleDeleteTournament = () => {
+    if (window.confirm('Delete this tournament? This cannot be undone.')) {
+      deleteMutation.mutate();
+    }
+  };
 
   const tournament = data?.tournament;
   const leaderboard = data?.leaderboard || [];
@@ -86,16 +104,28 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
   return (
     <div className="space-y-3.5 pb-24 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-1.5 rounded-lg bg-[#141414] border border-white/10 text-neutral-400 hover:text-white transition active:scale-95"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h2 className="font-heading font-bold text-base text-white truncate">
-          {tournament.title}
-        </h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 truncate">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1.5 rounded-lg bg-[#141414] border border-white/10 text-neutral-400 hover:text-white transition active:scale-95 flex-shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <h2 className="font-heading font-bold text-base text-white truncate">
+            {tournament.title}
+          </h2>
+        </div>
+
+        {user?.isAdmin && (
+          <button
+            onClick={handleDeleteTournament}
+            disabled={deleteMutation.isPending}
+            className="py-1 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-heading font-bold text-xs flex items-center gap-1 transition active:scale-95 disabled:opacity-50 flex-shrink-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete
+          </button>
+        )}
       </div>
 
       {/* Prize & Status Card */}
@@ -231,8 +261,13 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
                   </div>
                 </div>
 
-                <div className="font-heading font-bold text-xs text-sky-400">
-                  {player.bestScore} pts
+                <div className="flex items-center gap-2 font-heading font-bold text-xs">
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    💎 {player.bestDiamonds ?? 0}
+                  </span>
+                  <span className="text-neutral-500 font-normal text-[10px]">
+                    ({player.bestScore} pts)
+                  </span>
                 </div>
               </div>
             ))}

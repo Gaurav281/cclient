@@ -12,6 +12,12 @@ export const adminApi = {
     });
   },
 
+  deleteTournament: async (tournamentId) => {
+    return await apiRequest(`/api/admin/tournaments/${tournamentId}`, {
+      method: 'DELETE',
+    });
+  },
+
   declareResult: async (tournamentId) => {
     return await apiRequest(`/api/admin/tournaments/${tournamentId}/declare`, {
       method: 'POST',

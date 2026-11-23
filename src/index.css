@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dynamic Theme Accent System */
+:root, [data-theme="blue"] {
+  --color-primary: #38BDF8;
+  --color-primary-hover: #0EA5E9;
+  --color-primary-rgb: 56 189 248;
+  --color-primary-hover-rgb: 14 165 233;
+}
+
+[data-theme="green"] {
+  --color-primary: #10B981;
+  --color-primary-hover: #059669;
+  --color-primary-rgb: 16 185 129;
+  --color-primary-hover-rgb: 5 150 105;
+}
+
+[data-theme="purple"] {
+  --color-primary: #A855F7;
+  --color-primary-hover: #9333EA;
+  --color-primary-rgb: 168 85 247;
+  --color-primary-hover-rgb: 147 51 234;
+}
+
+[data-theme="yellow"] {
+  --color-primary: #FACC15;
+  --color-primary-hover: #EAB308;
+  --color-primary-rgb: 250 204 21;
+  --color-primary-hover-rgb: 234 179 8;
+}
+
 @layer utilities {
   .premium-card {
     background: #0E0E0E;
@@ -14,13 +43,13 @@
   }
 
   .blue-gradient-btn {
-    background: #38BDF8;
+    background: var(--color-primary);
     color: #000000;
     transition: all 0.15s ease;
   }
   
   .blue-gradient-btn:hover {
-    background: #7DD3FC;
+    background: var(--color-primary-hover);
   }
   
   .blue-gradient-btn:active {
@@ -42,5 +71,5 @@
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #38BDF8;
+  background: var(--color-primary);
 }

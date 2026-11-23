@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore.js';
 import { authApi } from '../api/authApi.js';
+import { useThemeStore, THEMES } from '../store/useThemeStore.js';
 import {
   Trophy,
   Wallet,
@@ -10,6 +11,8 @@ import {
   CreditCard,
   CheckCircle2,
   Save,
+  Palette,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTelegram } from '../store/useTelegram.js';
@@ -17,6 +20,7 @@ import { useTelegram } from '../store/useTelegram.js';
 export const ProfilePage = () => {
   const { user, setSavedUpiId } = useAuthStore();
   const { haptic } = useTelegram();
+  const { currentTheme, setTheme } = useThemeStore();
 
   const [upiInput, setUpiInput] = useState('');
   const [isSavingUpi, setIsSavingUpi] = useState(false);
@@ -123,6 +127,51 @@ export const ProfilePage = () => {
             {isSavingUpi ? 'Saving...' : user?.savedUpiId ? 'Update UPI ID' : 'Save UPI ID'}
           </button>
         </form>
+      </div>
+
+      {/* Theme Accent Customization */}
+      <div className="rounded-xl p-3.5 bg-[#0E0E0E] border border-white/10 space-y-3">
+        <div className="flex items-center gap-1.5">
+          <Palette className="w-4 h-4 text-sky-400" />
+          <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-300">
+            Accent Theme
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {Object.values(THEMES).map((theme) => {
+            const isSelected = currentTheme === theme.id;
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => {
+                  setTheme(theme.id);
+                  haptic.selection();
+                  toast.success(`Theme switched to ${theme.name}`);
+                }}
+                className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition active:scale-95 ${
+                  isSelected
+                    ? 'bg-[#181818] border-white/40 ring-1 ring-white/20'
+                    : 'bg-[#121212] border-white/5 hover:border-white/20'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-3.5 h-3.5 rounded-full shadow-sm"
+                    style={{ backgroundColor: theme.hex }}
+                  />
+                  <span className="text-xs font-semibold text-white">
+                    {theme.name}
+                  </span>
+                </div>
+                {isSelected && (
+                  <Check className="w-3.5 h-3.5 text-sky-400 stroke-[3]" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Career Stats Grid */}

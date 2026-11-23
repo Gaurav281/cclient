@@ -2,7 +2,7 @@ import React from 'react';
 
 export const FireLogo = ({
   className = 'w-6 h-6',
-  outerColor = '#38BDF8',
+  outerColor = 'var(--color-primary)',
   innerColor = '#FFFFFF',
   ...props
 }) => {

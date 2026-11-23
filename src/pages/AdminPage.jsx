@@ -12,6 +12,7 @@ import {
   Check,
   X,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -83,6 +84,23 @@ export const AdminPage = () => {
     },
     onError: (err) => toast.error(err.message || 'Failed to declare results'),
   });
+
+  const deleteTournamentMutation = useMutation({
+    mutationFn: (tournamentId) => adminApi.deleteTournament(tournamentId),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Tournament deleted!');
+      refetchTournaments();
+      refetchStats();
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    },
+    onError: (err) => toast.error(err.message || 'Failed to delete tournament'),
+  });
+
+  const handleDeleteTournament = (t) => {
+    if (window.confirm(`Delete "${t.title}"? This cannot be undone.`)) {
+      deleteTournamentMutation.mutate(t._id);
+    }
+  };
 
   const approveDepositMutation = useMutation({
     mutationFn: ({ id, remarks }) => adminApi.approveDeposit(id, remarks),
@@ -277,15 +295,26 @@ export const AdminPage = () => {
                     Leaderboard
                   </button>
 
-                  {t.status !== 'DECLARED' && (
+                  <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => declareResultMutation.mutate(t._id)}
-                      disabled={declareResultMutation.isPending}
-                      className="py-1 px-2.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-black font-heading font-bold text-[11px] flex items-center gap-1 transition active:scale-95"
+                      onClick={() => handleDeleteTournament(t)}
+                      disabled={deleteTournamentMutation.isPending}
+                      className="py-1 px-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-heading font-bold text-[11px] flex items-center gap-1 transition active:scale-95 disabled:opacity-50"
+                      title="Delete Tournament"
                     >
-                      <Trophy className="w-3 h-3" /> Declare Results
+                      <Trash2 className="w-3 h-3" /> Delete
                     </button>
-                  )}
+
+                    {t.status !== 'DECLARED' && (
+                      <button
+                        onClick={() => declareResultMutation.mutate(t._id)}
+                        disabled={declareResultMutation.isPending}
+                        className="py-1 px-2.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-black font-heading font-bold text-[11px] flex items-center gap-1 transition active:scale-95"
+                      >
+                        <Trophy className="w-3 h-3" /> Declare Results
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

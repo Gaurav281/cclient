@@ -36,8 +36,10 @@ export const WalletPage = () => {
       }
       return res;
     },
-    refetchInterval: () => (document.visibilityState === 'visible' ? 12000 : false),
-    refetchIntervalInBackground: false,
+    staleTime: 1000 * 60 * 3, // 3 minutes freshness: prevents redundant refetches on every page visit
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const currentBalance = data?.balance !== undefined ? data.balance : user?.walletBalance || 0;
