@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .premium-card {
+    background: #0E0E0E;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .premium-card-elevated {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .blue-gradient-btn {
+    background: #38BDF8;
+    color: #000000;
+    transition: all 0.15s ease;
+  }
+  
+  .blue-gradient-btn:hover {
+    background: #7DD3FC;
+  }
+  
+  .blue-gradient-btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* Custom sleek neutral scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}

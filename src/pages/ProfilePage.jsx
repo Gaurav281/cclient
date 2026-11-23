@@ -1,0 +1,176 @@
+import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/useAuthStore.js';
+import { authApi } from '../api/authApi.js';
+import {
+  Trophy,
+  Wallet,
+  Gamepad2,
+  Sparkles,
+  Bot,
+  CreditCard,
+  CheckCircle2,
+  Save,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useTelegram } from '../store/useTelegram.js';
+
+export const ProfilePage = () => {
+  const { user, setSavedUpiId } = useAuthStore();
+  const { haptic } = useTelegram();
+
+  const [upiInput, setUpiInput] = useState('');
+  const [isSavingUpi, setIsSavingUpi] = useState(false);
+
+  useEffect(() => {
+    if (user?.savedUpiId) {
+      setUpiInput(user.savedUpiId);
+    }
+  }, [user?.savedUpiId]);
+
+  const handleSaveUpi = async (e) => {
+    e.preventDefault();
+    const cleanUpi = upiInput.trim();
+
+    if (!cleanUpi || !cleanUpi.includes('@')) {
+      toast.error('Enter valid UPI ID (e.g. name@okaxis)');
+      haptic.error();
+      return;
+    }
+
+    setIsSavingUpi(true);
+    try {
+      const res = await authApi.updateSavedUpi(cleanUpi);
+      setSavedUpiId(cleanUpi);
+      toast.success(res.message || 'UPI ID saved!');
+      haptic.success();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save UPI ID');
+      haptic.error();
+    } finally {
+      setIsSavingUpi(false);
+    }
+  };
+
+  const displayName = user
+    ? user.username
+      ? `@${user.username}`
+      : `${user.firstName || 'Player'} ${user.lastName || ''}`.trim()
+    : 'Player';
+
+  return (
+    <div className="space-y-3 pb-24 animate-fade-in">
+      {/* Profile Header */}
+      <div className="rounded-xl p-4 bg-[#0E0E0E] border border-white/10 text-center space-y-2.5">
+        <div className="relative inline-block mx-auto">
+          {user?.photoUrl ? (
+            <img
+              src={user.photoUrl}
+              alt={displayName}
+              className="w-14 h-14 rounded-full border border-white/20 object-cover"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-[#181818] border border-white/15 flex items-center justify-center font-heading font-bold text-lg text-white">
+              {user?.firstName ? user.firstName.charAt(0).toUpperCase() : '🏎️'}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h2 className="font-heading font-bold text-base text-white">
+            {displayName}
+          </h2>
+          <p className="text-[11px] text-neutral-400 font-mono mt-0.5">
+            ID: {user?.telegramId || '123456789'}
+          </p>
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-medium text-neutral-300 mt-1.5">
+            <Bot className="w-3 h-3 text-sky-400" /> @FireflyPlayBot
+          </div>
+        </div>
+      </div>
+
+      {/* Saved UPI ID Card */}
+      <div className="rounded-xl p-3.5 bg-[#0E0E0E] border border-white/10 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <CreditCard className="w-4 h-4 text-sky-400" />
+            <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-300">
+              Payout UPI ID
+            </h3>
+          </div>
+          {user?.savedUpiId && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400">
+              <CheckCircle2 className="w-3 h-3" /> Saved
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleSaveUpi} className="space-y-2">
+          <input
+            type="text"
+            required
+            placeholder="e.g. yourname@okhdfcbank"
+            value={upiInput}
+            onChange={(e) => setUpiInput(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white placeholder-neutral-500 font-mono text-xs focus:outline-none focus:border-sky-400 transition"
+          />
+
+          <button
+            type="submit"
+            disabled={isSavingUpi}
+            className="w-full py-2 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+          >
+            <Save className="w-3.5 h-3.5" />
+            {isSavingUpi ? 'Saving...' : user?.savedUpiId ? 'Update UPI ID' : 'Save UPI ID'}
+          </button>
+        </form>
+      </div>
+
+      {/* Career Stats Grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* Wallet Balance */}
+        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
+            <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Balance</span>
+          </div>
+          <div className="font-heading font-bold text-lg text-emerald-400">
+            ₹{user?.walletBalance !== undefined ? user.walletBalance.toLocaleString('en-IN') : 0}
+          </div>
+        </div>
+
+        {/* Total Earnings */}
+        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
+            <Trophy className="w-3.5 h-3.5 text-sky-400" />
+            <span>Earnings</span>
+          </div>
+          <div className="font-heading font-bold text-lg text-sky-400">
+            ₹{user?.totalEarnings !== undefined ? user.totalEarnings.toLocaleString('en-IN') : 0}
+          </div>
+        </div>
+
+        {/* Tournaments Played */}
+        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
+            <Gamepad2 className="w-3.5 h-3.5 text-neutral-300" />
+            <span>Tournaments</span>
+          </div>
+          <div className="font-heading font-bold text-lg text-white">
+            {user?.tournamentsPlayed || 0}
+          </div>
+        </div>
+
+        {/* High Score */}
+        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>High Score</span>
+          </div>
+          <div className="font-heading font-bold text-lg text-amber-400">
+            {user?.highestGameScore || 0}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
