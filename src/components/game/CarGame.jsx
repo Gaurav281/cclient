@@ -38,6 +38,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     submissionResult: null,
   });
 
+  const [liveHud, setLiveHud] = useState({ score: 0, diamonds: 0 });
+
   const [isMuted, setIsMuted] = useState(soundManager.isMuted);
 
   const toggleSound = () => {
@@ -177,6 +179,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
 
     let animId;
     let lastTime = performance.now();
+    let lastHudTime = 0;
+    let lastReportedDiamonds = -1;
 
     const loop = (currentTime) => {
       const dt = (currentTime - lastTime) / 1000;
@@ -208,6 +212,16 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
         s.distance += s.speed * 0.1;
         s.speed = s.baseSpeed + Math.min(10, Math.floor(s.distance / 120) * 0.6);
         s.score = Math.floor(s.distance) + s.diamondsCollected * 50;
+
+        // Real-time live HUD update (smooth ~12-15 fps updates so points increment visibly during play)
+        if (currentTime - lastHudTime > 75 || s.diamondsCollected !== lastReportedDiamonds) {
+          lastHudTime = currentTime;
+          lastReportedDiamonds = s.diamondsCollected;
+          setLiveHud({
+            score: s.score,
+            diamonds: s.diamondsCollected,
+          });
+        }
 
         // Animate road stripes
         s.roadOffset = (s.roadOffset + s.speed) % 60;
@@ -580,6 +594,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       isSubmitting: false,
       submissionResult: null,
     });
+    setLiveHud({ score: 0, diamonds: 0 });
   };
 
   const displayTurns = gameState.submissionResult?.turnsLeft ?? turnsLeft;
@@ -600,13 +615,13 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0E0E0E] border border-white/10">
             <Sparkles className="w-4 h-4 text-sky-400" />
             <span className="font-bold text-white text-sm">
-              {stateRef.current.diamondsCollected}
+              {liveHud.diamonds}
             </span>
           </div>
 
           <div className="px-3 py-1.5 rounded-xl bg-[#141414] border border-white/10">
             <span className="font-extrabold text-sky-400 text-sm tracking-wide">
-              {stateRef.current.score} PTS
+              {liveHud.score} PTS
             </span>
           </div>
 

@@ -23,7 +23,8 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
   const { data, isLoading } = useQuery({
     queryKey: ['tournaments'],
     queryFn: tournamentApi.getTournaments,
-    refetchInterval: 12000,
+    refetchInterval: () => (document.visibilityState === 'visible' ? 15000 : false),
+    refetchIntervalInBackground: false,
   });
 
   const joinMutation = useMutation({

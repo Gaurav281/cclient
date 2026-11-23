@@ -36,7 +36,8 @@ export const WalletPage = () => {
       }
       return res;
     },
-    refetchInterval: 10000,
+    refetchInterval: () => (document.visibilityState === 'visible' ? 12000 : false),
+    refetchIntervalInBackground: false,
   });
 
   const currentBalance = data?.balance !== undefined ? data.balance : user?.walletBalance || 0;

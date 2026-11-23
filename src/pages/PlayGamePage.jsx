@@ -5,7 +5,7 @@ import { tournamentApi } from '../api/tournamentApi.js';
 import { gameApi } from '../api/gameApi.js';
 import { CarGame } from '../components/game/CarGame.jsx';
 import { toast } from 'sonner';
-import confetti from 'canvas-confetti';
+import { triggerFireAnimation } from '../utils/fireAnimation.js';
 import { useAuthStore } from '../store/useAuthStore.js';
 import { Loader2 } from 'lucide-react';
 
@@ -34,13 +34,9 @@ export const PlayGamePage = () => {
         distance,
       });
 
-      // Confetti celebration if high score
+      // Fire animation celebration when tournament score is submitted!
       try {
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.7 },
-        });
+        triggerFireAnimation();
       } catch (e) {}
 
       // Invalidate relevant queries

@@ -13,12 +13,13 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     const tg = window.Telegram?.WebApp;
     const tgInitData = tg?.initData;
+    const tgUser = tg?.initDataUnsafe?.user;
 
     try {
-      // 1. If opened inside Telegram, automatically log in with initData
-      if (tgInitData) {
-        console.log('[Auth] Authenticating via Telegram WebApp initData...');
-        const res = await authApi.loginWithTelegram(tgInitData);
+      // 1. If opened inside Telegram, automatically log in with real Telegram user credentials
+      if (tgInitData || tgUser) {
+        console.log('[Auth] Authenticating Telegram user:', tgUser?.username || tgUser?.id || 'TMA session');
+        const res = await authApi.loginWithTelegram(tgInitData, tgUser);
         set({
           user: res.user,
           token: res.token,
@@ -46,8 +47,8 @@ export const useAuthStore = create((set, get) => ({
         }
       }
 
-      // 3. Fallback: If in browser outside Telegram, auto-login with dev/demo profile
-      console.log('[Auth] Running outside Telegram: Auto-authenticating in Demo Mode');
+      // 3. Fallback only if testing outside Telegram in a plain desktop browser
+      console.log('[Auth] Web preview mode: auto-initializing session');
       const devRes = await authApi.devLogin();
       set({
         user: devRes.user,

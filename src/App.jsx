@@ -18,12 +18,14 @@ import { WalletPage } from './pages/WalletPage.jsx';
 import { ProfilePage } from './pages/ProfilePage.jsx';
 import { AdminPage } from './pages/AdminPage.jsx';
 
-// Initialize TanStack Query Client with optimal caching
+// Initialize TanStack Query Client with optimal caching & mobile network efficiency
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 10, // 10 seconds stale time
-      refetchOnWindowFocus: true,
+      staleTime: 1000 * 20, // 20 seconds fresh cache
+      gcTime: 1000 * 60 * 5, // 5 minutes garbage collection
+      refetchOnWindowFocus: false, // Prevent redundant refetches on TMA modal/keyboard focus
+      refetchOnReconnect: true,
       retry: 1,
     },
   },

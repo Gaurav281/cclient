@@ -1,10 +1,10 @@
 import { apiRequest, setAuthToken } from './client.js';
 
 export const authApi = {
-  loginWithTelegram: async (initData) => {
+  loginWithTelegram: async (initData, user = null) => {
     const res = await apiRequest('/api/auth/telegram', {
       method: 'POST',
-      body: { initData },
+      body: { initData, user },
     });
     if (res.token) setAuthToken(res.token);
     return res;
