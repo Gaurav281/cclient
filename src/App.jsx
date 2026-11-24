@@ -81,9 +81,10 @@ function AppContent() {
       {/* Global Deposit Modal Trigger */}
       <DepositModal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} />
 
-      {/* Toast Notifications */}
+      {/* Toast Notifications with Cross Close Button */}
       <Toaster
         position="top-center"
+        closeButton
         toastOptions={{
           style: {
             background: '#121212',

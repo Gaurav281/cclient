@@ -54,7 +54,8 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
       return t.status === 'ACTIVE' && !t.hasEnded;
     }
     if (activeTab === 'completed') {
-      return t.status === 'DECLARED' || t.hasEnded;
+      // Only show finished tournaments that this user participated in
+      return (t.status === 'DECLARED' || t.hasEnded) && Boolean(t.userParticipation?.isJoined);
     }
     if (activeTab === 'my') {
       return t.userParticipation?.isJoined;
@@ -98,29 +99,68 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
   };
 
   return (
-    <div className="space-y-3 pb-24 animate-fade-in">
-      {/* Top Practice Car Game Button */}
-      <button
+    <div className="space-y-3.5 pb-24 animate-fade-in">
+      {/* Hero Practice Car Game Banner */}
+      <div
         onClick={() => {
           haptic.light();
           navigate('/play');
         }}
-        className="w-full py-2.5 px-3.5 rounded-2xl bg-[#0E0E0E] border border-white/10 hover:border-sky-400/40 active:scale-[0.98] transition flex items-center justify-between group"
+        className="relative overflow-hidden rounded-2xl theme-card p-4 active:scale-[0.98] transition-all cursor-pointer group"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-400">
-            <Gamepad2 className="w-4 h-4" />
-          </div>
-          <span className="font-heading font-bold text-white text-sm">
-            Practice Car Game
-          </span>
+        {/* Background Image Container (supports custom image when uploaded + stylized fallback) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <img
+            src="/practice-game.png"
+            alt="Car Racing Practice"
+            className="w-full h-full object-cover object-center opacity-40 group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          {/* Theme Dynamic Cyber Ambient Glow */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
+          <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-sky-400/10 blur-2xl group-hover:bg-sky-400/20 transition-all duration-500" />
         </div>
 
-        <div className="px-3 py-1 rounded-xl bg-sky-400 text-black font-heading font-bold text-xs tracking-wider uppercase flex items-center gap-1 group-hover:bg-sky-300 transition">
-          <Play className="w-3 h-3 fill-black" />
-          <span>Practice</span>
+        {/* Card Content Overlay */}
+        <div className="relative z-10 flex flex-col justify-between min-h-[120px] gap-2.5">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold tracking-wider uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Free Practice</span>
+            </div>
+
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-neutral-300 font-mono">
+              <span>💎 Unlimited Runs</span>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-heading font-black text-lg text-white tracking-wide flex items-center gap-2">
+              <span>3-Lane Speed Racer</span>
+              <span className="text-base">🏎️</span>
+            </h3>
+            <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
+              Dodge traffic, collect diamonds & test your reflexes.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
+              <span>High Score:</span>
+              <span className="font-heading font-bold text-sky-400">
+                {user?.highestGameScore || 0} PTS
+              </span>
+            </div>
+
+            <div className="px-3.5 py-1.5 rounded-xl bg-sky-400 group-hover:bg-sky-300 text-black font-heading font-extrabold text-xs tracking-wider uppercase flex items-center gap-1.5 shadow-md transition-all active:scale-95">
+              <Play className="w-3.5 h-3.5 fill-black" />
+              <span>Practice Now</span>
+            </div>
+          </div>
         </div>
-      </button>
+      </div>
 
       {/* Premium Neutral Filter Tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0E0E0E] border border-white/10">
@@ -175,7 +215,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
               <div
                 key={t._id}
                 onClick={() => navigate(`/tournament/${t._id}`)}
-                className="rounded-xl p-3.5 bg-[#0E0E0E] border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-[0.99] space-y-3"
+                className="rounded-xl p-3.5 theme-card cursor-pointer active:scale-[0.99] space-y-3"
               >
                 {/* Header Row: Title + Entry Fee Tag + Time/Status */}
                 <div className="flex items-center justify-between gap-2">

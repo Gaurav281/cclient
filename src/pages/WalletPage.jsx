@@ -80,7 +80,7 @@ export const WalletPage = () => {
   return (
     <div className="space-y-3.5 pb-24 animate-fade-in">
       {/* Balance Card */}
-      <div className="rounded-xl p-4 bg-[#0E0E0E] border border-white/10 space-y-3">
+      <div className="rounded-xl p-4 theme-card space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1 rounded bg-[#181818] text-neutral-300">

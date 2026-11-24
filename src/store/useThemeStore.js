@@ -17,13 +17,13 @@ export const THEMES = {
     bgClass: 'bg-[#10B981]',
     borderClass: 'border-[#10B981]',
   },
-  purple: {
-    id: 'purple',
-    name: 'Cyber Purple',
-    hex: '#A855F7',
-    hoverHex: '#9333EA',
-    bgClass: 'bg-[#A855F7]',
-    borderClass: 'border-[#A855F7]',
+  red: {
+    id: 'red',
+    name: 'Crimson Red',
+    hex: '#EF4444',
+    hoverHex: '#DC2626',
+    bgClass: 'bg-[#EF4444]',
+    borderClass: 'border-[#EF4444]',
   },
   yellow: {
     id: 'yellow',
@@ -39,6 +39,7 @@ const getStoredTheme = () => {
   try {
     const saved = localStorage.getItem('firefly_theme');
     if (saved && THEMES[saved]) return saved;
+    if (saved === 'purple') return 'red'; // Graceful migration from old purple
   } catch (e) {}
   return 'blue';
 };

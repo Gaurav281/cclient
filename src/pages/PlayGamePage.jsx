@@ -56,9 +56,9 @@ export const PlayGamePage = () => {
 
   const handleExit = () => {
     if (tournamentId) {
-      navigate(`/tournament/${tournamentId}`);
+      navigate(`/tournament/${tournamentId}`, { replace: true });
     } else {
-      navigate('/');
+      navigate('/', { replace: true });
     }
   };
 

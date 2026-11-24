@@ -64,7 +64,7 @@ export const ProfilePage = () => {
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
       {/* Profile Header */}
-      <div className="rounded-xl p-4 bg-[#0E0E0E] border border-white/10 text-center space-y-2.5">
+      <div className="rounded-xl p-4 theme-card text-center space-y-2.5">
         <div className="relative inline-block mx-auto">
           {user?.photoUrl ? (
             <img
@@ -93,7 +93,7 @@ export const ProfilePage = () => {
       </div>
 
       {/* Saved UPI ID Card */}
-      <div className="rounded-xl p-3.5 bg-[#0E0E0E] border border-white/10 space-y-2.5">
+      <div className="rounded-xl p-3.5 theme-card space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <CreditCard className="w-4 h-4 text-sky-400" />
@@ -130,7 +130,7 @@ export const ProfilePage = () => {
       </div>
 
       {/* Theme Accent Customization */}
-      <div className="rounded-xl p-3.5 bg-[#0E0E0E] border border-white/10 space-y-3">
+      <div className="rounded-xl p-3.5 theme-card space-y-3">
         <div className="flex items-center gap-1.5">
           <Palette className="w-4 h-4 text-sky-400" />
           <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-300">
@@ -177,7 +177,7 @@ export const ProfilePage = () => {
       {/* Career Stats Grid */}
       <div className="grid grid-cols-2 gap-2">
         {/* Wallet Balance */}
-        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+        <div className="p-3 rounded-xl theme-card space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
             <Wallet className="w-3.5 h-3.5 text-emerald-400" />
             <span>Balance</span>
@@ -188,7 +188,7 @@ export const ProfilePage = () => {
         </div>
 
         {/* Total Earnings */}
-        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+        <div className="p-3 rounded-xl theme-card space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
             <Trophy className="w-3.5 h-3.5 text-sky-400" />
             <span>Earnings</span>
@@ -199,7 +199,7 @@ export const ProfilePage = () => {
         </div>
 
         {/* Tournaments Played */}
-        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+        <div className="p-3 rounded-xl theme-card space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
             <Gamepad2 className="w-3.5 h-3.5 text-neutral-300" />
             <span>Tournaments</span>
@@ -210,7 +210,7 @@ export const ProfilePage = () => {
         </div>
 
         {/* High Score */}
-        <div className="p-3 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-1">
+        <div className="p-3 rounded-xl theme-card space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>High Score</span>

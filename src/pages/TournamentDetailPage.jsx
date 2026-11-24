@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tournamentApi } from '../api/tournamentApi.js';
@@ -19,6 +19,20 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
   const queryClient = useQueryClient();
   const { user, updateWalletBalance } = useAuthStore();
   const { haptic } = useTelegram();
+
+  // Hook Telegram native back button to return to main tournaments page
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.BackButton) {
+      tg.BackButton.show();
+      const onBack = () => navigate('/');
+      tg.BackButton.onClick(onBack);
+      return () => {
+        tg.BackButton.offClick(onBack);
+        tg.BackButton.hide();
+      };
+    }
+  }, [navigate]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
@@ -107,8 +121,9 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 truncate">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/')}
             className="p-1.5 rounded-lg bg-[#141414] border border-white/10 text-neutral-400 hover:text-white transition active:scale-95 flex-shrink-0"
+            title="Back to tournaments"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -129,7 +144,7 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
       </div>
 
       {/* Prize & Status Card */}
-      <div className="rounded-xl p-4 bg-[#0E0E0E] border border-white/10 space-y-3">
+      <div className="rounded-xl p-4 theme-card space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase font-medium text-neutral-400 block">
