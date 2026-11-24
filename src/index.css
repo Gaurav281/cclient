@@ -17,13 +17,6 @@
   --color-primary-hover-rgb: 5 150 105;
 }
 
-[data-theme="red"] {
-  --color-primary: #EF4444;
-  --color-primary-hover: #DC2626;
-  --color-primary-rgb: 239 68 68;
-  --color-primary-hover-rgb: 220 38 38;
-}
-
 [data-theme="yellow"] {
   --color-primary: #FACC15;
   --color-primary-hover: #EAB308;

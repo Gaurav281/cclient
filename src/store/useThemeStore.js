@@ -17,14 +17,6 @@ export const THEMES = {
     bgClass: 'bg-[#10B981]',
     borderClass: 'border-[#10B981]',
   },
-  red: {
-    id: 'red',
-    name: 'Crimson Red',
-    hex: '#EF4444',
-    hoverHex: '#DC2626',
-    bgClass: 'bg-[#EF4444]',
-    borderClass: 'border-[#EF4444]',
-  },
   yellow: {
     id: 'yellow',
     name: 'Solar Yellow',
@@ -39,7 +31,6 @@ const getStoredTheme = () => {
   try {
     const saved = localStorage.getItem('firefly_theme');
     if (saved && THEMES[saved]) return saved;
-    if (saved === 'purple') return 'red'; // Graceful migration from old purple
   } catch (e) {}
   return 'blue';
 };

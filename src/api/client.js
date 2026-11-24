@@ -1,7 +1,21 @@
-const API_BASE = (
+export const API_BASE = (
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? 'https://firebackend-4k60.onrender.com' : '')
 ).replace(/\/+$/, '');
+
+export async function checkServerHealth(timeoutMs = 3500) {
+  const url = `${API_BASE}/health`;
+  const start = Date.now();
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { 'Cache-Control': 'no-cache' },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json().catch(() => ({}));
+  const latency = Date.now() - start;
+  return { ok: true, data, latency };
+}
 
 export const getAuthToken = () => {
   return localStorage.getItem('car_token') || '';
