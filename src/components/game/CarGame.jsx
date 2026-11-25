@@ -41,9 +41,9 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     score: 0,
     diamondsCollected: 0,
     distance: 0,
-    speed: 3.2,
-    baseSpeed: 3.2,
-    maxSpeed: 5.8,
+    speed: 5.2,
+    baseSpeed: 5.2,
+    maxSpeed: 7.8,
     playerLane: 1, // 0: Left, 1: Center, 2: Right
     playerX: 0,
     targetX: 0,
@@ -303,8 +303,9 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     s.score = 0;
     s.diamondsCollected = 0;
     s.distance = 0;
-    s.speed = 3.2;
-    s.baseSpeed = 3.2;
+    s.speed = 5.2;
+    s.baseSpeed = 5.2;
+    s.maxSpeed = 7.8;
     s.playerLane = 1;
     s.traffic = [];
     s.diamonds = [];
@@ -352,14 +353,14 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
           // While in 3-second countdown: keep car in place, delay traffic and diamonds
           s.lastTrafficSpawn = currentTime;
           s.lastDiamondSpawn = currentTime;
-          // Road rolls at low idle speed
-          s.roadOffset = (s.roadOffset + 1.2) % 60;
+          // Road remains completely stationary at starting line until countdown ends
+          s.roadOffset = 0;
         } else {
           // Increment distance & speed smoothly
-          s.distance += s.speed * 0.08;
-          // Gradual speed increase: starts at 3.2, increases by +0.25 every 180 distance units,
-          // then stays constant at 5.8 so it never becomes too fast!
-          s.speed = Math.min(5.8, s.baseSpeed + Math.floor(s.distance / 180) * 0.25);
+          s.distance += s.speed * 0.1;
+          // Gradual speed progression: starts fast and snappy at 5.2, gently climbs to 7.8 cap,
+          // then stays constant so it never becomes impossible!
+          s.speed = Math.min(s.maxSpeed || 7.8, s.baseSpeed + Math.floor(s.distance / 160) * 0.3);
           s.score = Math.floor(s.distance) + s.diamondsCollected * 50;
 
           // Real-time live HUD update (smooth ~12-15 fps updates so points increment visibly during play)
@@ -375,36 +376,56 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
           // Animate road stripes
           s.roadOffset = (s.roadOffset + s.speed) % 60;
 
-          // Spawn Traffic Cars (paced comfortably for readable reaction times)
-          if (currentTime - s.lastTrafficSpawn > Math.max(1400, 2800 - s.speed * 90)) {
-            const lane = Math.floor(Math.random() * 3);
-            const colors = ['#EF4444', '#F59E0B', '#3B82F6', '#EC4899'];
-            const carColor = colors[Math.floor(Math.random() * colors.length)];
-            const trafficSpeed = s.speed * (0.35 + Math.random() * 0.25);
+          // Spawn Traffic Cars (with corridor guarantee: player always has an open escape lane)
+          const trafficInterval = Math.max(1100, 2400 - s.speed * 80);
+          if (currentTime - s.lastTrafficSpawn > trafficInterval) {
+            // Buffer: do not spawn if another car is still near the top
+            const recentTopCar = s.traffic.some((t) => t.y < carH * 1.8);
 
-            s.traffic.push({
-              lane,
-              x: laneCenters[lane],
-              y: -carH - 20,
-              speed: trafficSpeed,
-              color: carColor,
-              width: carW,
-              height: carH,
-            });
-            s.lastTrafficSpawn = currentTime;
+            // Lanes occupied in incoming half of the screen
+            const occupiedLanes = new Set(
+              s.traffic.filter((t) => t.y < height * 0.55).map((t) => t.lane)
+            );
+
+            // Corridor guarantee: never occupy all 3 lanes simultaneously
+            if (!recentTopCar && occupiedLanes.size < 2) {
+              const openLanes = [0, 1, 2].filter((lane) => !occupiedLanes.has(lane));
+              if (openLanes.length > 0) {
+                const lane = openLanes[Math.floor(Math.random() * openLanes.length)];
+                const colors = ['#EF4444', '#F59E0B', '#3B82F6', '#EC4899'];
+                const carColor = colors[Math.floor(Math.random() * colors.length)];
+                // Uniform traffic speed keeps spacing intact and prevents cars from clumping into horizontal walls
+                const trafficSpeed = s.speed * 0.44;
+
+                s.traffic.push({
+                  lane,
+                  x: laneCenters[lane],
+                  y: -carH - 20,
+                  speed: trafficSpeed,
+                  color: carColor,
+                  width: carW,
+                  height: carH,
+                });
+                s.lastTrafficSpawn = currentTime;
+              }
+            }
           }
 
-          // Spawn Diamonds
-          if (currentTime - s.lastDiamondSpawn > Math.max(1400, 2700 - s.speed * 80)) {
-            const availableLanes = [0, 1, 2];
-            const diamondLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+          // Spawn Diamonds (safely placed in open lanes)
+          const diamondInterval = Math.max(1200, 2500 - s.speed * 70);
+          if (currentTime - s.lastDiamondSpawn > diamondInterval) {
+            const safeLanes = [0, 1, 2].filter(
+              (lane) => !s.traffic.some((t) => t.lane === lane && t.y < 160)
+            );
+            const diamondLane = safeLanes.length > 0
+              ? safeLanes[Math.floor(Math.random() * safeLanes.length)]
+              : Math.floor(Math.random() * 3);
 
             s.diamonds.push({
               lane: diamondLane,
               x: laneCenters[diamondLane],
               y: -40,
               radius: 14,
-              rotation: 0,
             });
             s.lastDiamondSpawn = currentTime;
           }
@@ -468,7 +489,6 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
           for (let i = s.diamonds.length - 1; i >= 0; i--) {
             const d = s.diamonds[i];
             d.y += s.speed;
-            d.rotation += 0.05;
 
             // Collection check
             const collectX = Math.abs(s.playerX - d.x) < (carW * 0.8 + d.radius);
@@ -555,11 +575,10 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       ctx.stroke();
       ctx.setLineDash([]); // Reset line dash
 
-      // Draw Diamonds
+      // Draw Diamonds (Upright fixed gemstone - no rotation)
       s.diamonds.forEach((d) => {
         ctx.save();
         ctx.translate(d.x, d.y);
-        ctx.rotate(d.rotation);
 
         ctx.shadowBlur = 0;
 
@@ -736,8 +755,9 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     s.score = 0;
     s.diamondsCollected = 0;
     s.distance = 0;
-    s.speed = 3.2;
-    s.baseSpeed = 3.2;
+    s.speed = 5.2;
+    s.baseSpeed = 5.2;
+    s.maxSpeed = 7.8;
     s.playerLane = 1;
     s.traffic = [];
     s.diamonds = [];
