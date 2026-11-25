@@ -14,6 +14,10 @@ import {
   ArrowLeft,
   Trash2,
   Send,
+  Megaphone,
+  MessageSquare,
+  Bot,
+  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -48,6 +52,16 @@ export const AdminPage = () => {
   });
   const [broadcastStatus, setBroadcastStatus] = useState(null);
 
+  // Required Telegram chats state
+  const [showAddChatModal, setShowAddChatModal] = useState(false);
+  const [chatForm, setChatForm] = useState({
+    title: '',
+    type: 'channel',
+    link: '',
+    chatUsernameOrId: '',
+    isActive: true,
+  });
+
   // Queries
   const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ['adminStats'],
@@ -68,6 +82,12 @@ export const AdminPage = () => {
     queryKey: ['adminWithdrawals'],
     queryFn: () => adminApi.getTransactions({ type: 'WITHDRAWAL' }),
   });
+
+  const { data: requiredChatsData, refetch: refetchRequiredChats } = useQuery({
+    queryKey: ['adminRequiredChats'],
+    queryFn: adminApi.getRequiredChats,
+  });
+  const adminChats = requiredChatsData?.chats || [];
 
   // Mutations
   const createTournamentMutation = useMutation({
@@ -171,6 +191,28 @@ export const AdminPage = () => {
     onError: (err) => toast.error(err.message || 'Failed to send broadcast'),
   });
 
+  const createChatMutation = useMutation({
+    mutationFn: adminApi.createRequiredChat,
+    onSuccess: () => {
+      toast.success('Required Telegram link added!');
+      setShowAddChatModal(false);
+      setChatForm({ title: '', type: 'channel', link: '', chatUsernameOrId: '', isActive: true });
+      refetchRequiredChats();
+      queryClient.invalidateQueries({ queryKey: ['requiredChats'] });
+    },
+    onError: (err) => toast.error(err.message || 'Failed to add Telegram link'),
+  });
+
+  const deleteChatMutation = useMutation({
+    mutationFn: adminApi.deleteRequiredChat,
+    onSuccess: () => {
+      toast.success('Telegram link removed');
+      refetchRequiredChats();
+      queryClient.invalidateQueries({ queryKey: ['requiredChats'] });
+    },
+    onError: (err) => toast.error(err.message || 'Failed to delete'),
+  });
+
   const handleWinnerCountChange = (count) => {
     const num = Number(count);
     let newRewards = [...form.rewards];
@@ -246,6 +288,7 @@ export const AdminPage = () => {
           { id: 'tournaments', label: 'Tournaments', count: tournaments.length },
           { id: 'deposits', label: 'Deposits', count: stats.pendingDeposits },
           { id: 'withdrawals', label: 'Withdrawals', count: stats.pendingWithdrawals },
+          { id: 'channels', label: 'Join Links', count: adminChats.length },
           { id: 'settings', label: 'Settings' },
           { id: 'broadcast', label: 'Broadcast' },
         ].map((tab) => (
@@ -518,6 +561,92 @@ export const AdminPage = () => {
         </div>
       )}
 
+      {/* TAB: REQUIRED JOIN LINKS (join.jpg) */}
+      {activeTab === 'channels' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading font-bold text-sm text-white flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-sky-400" />
+              <span>Mandatory Join Links ({adminChats.length})</span>
+            </h3>
+            <button
+              onClick={() => setShowAddChatModal(true)}
+              className="px-3 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Add Link</span>
+            </button>
+          </div>
+
+          <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300 space-y-1">
+            <p className="font-semibold text-white">💡 Verification Guidance:</p>
+            <p className="text-[11px] text-sky-200/80 leading-relaxed">
+              When users open the app, they must join these links. For automatic Telegram membership check, make <span className="font-mono text-white font-bold">@FireflyPlayBot</span> an admin in your Telegram channel or group.
+            </p>
+          </div>
+
+          {adminChats.length === 0 ? (
+            <div className="p-8 rounded-xl bg-[#0E0E0E] border border-white/10 text-center text-neutral-500 text-xs">
+              No mandatory join links configured yet. Users can access the app directly.
+            </div>
+          ) : (
+            adminChats.map((chat) => (
+              <div
+                key={chat._id}
+                className="p-3.5 rounded-xl bg-[#0E0E0E] border border-white/10 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-sky-400 shrink-0">
+                    {chat.type === 'group' ? (
+                      <MessageSquare className="w-4 h-4" />
+                    ) : chat.type === 'bot' ? (
+                      <Bot className="w-4 h-4" />
+                    ) : (
+                      <Megaphone className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-heading font-bold text-white text-xs truncate">
+                      {chat.title}
+                    </h4>
+                    <p className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-2">
+                      <span className="capitalize">{chat.type}</span>
+                      <span>•</span>
+                      <a
+                        href={chat.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sky-400 hover:underline flex items-center gap-0.5 truncate"
+                      >
+                        <span>{chat.link}</span>
+                        <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                      </a>
+                    </p>
+                    {chat.chatUsernameOrId && (
+                      <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                        API Check: {chat.chatUsernameOrId}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Delete join requirement "${chat.title}"?`)) {
+                      deleteChatMutation.mutate(chat._id);
+                    }
+                  }}
+                  className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition shrink-0"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* TAB 5: BROADCAST TO BOT USERS */}
       {activeTab === 'broadcast' && (
         <div className="p-4 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-4">
@@ -760,6 +889,100 @@ export const AdminPage = () => {
                 className="w-full py-2.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wider transition active:scale-95"
               >
                 {createTournamentMutation.isPending ? 'Launching...' : 'Launch Tournament'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD REQUIRED CHAT MODAL */}
+      {showAddChatModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="w-full sm:max-w-md bg-[#0E0E0E] border-t sm:border border-white/10 rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <h3 className="font-heading font-bold text-sm text-white">Add Telegram Join Requirement</h3>
+              <button
+                onClick={() => setShowAddChatModal(false)}
+                className="p-1 text-neutral-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createChatMutation.mutate(chatForm);
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+                  Title / Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Firefly Official Channel"
+                  value={chatForm.title}
+                  onChange={(e) => setChatForm({ ...chatForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+                  Type
+                </label>
+                <select
+                  value={chatForm.type}
+                  onChange={(e) => setChatForm({ ...chatForm, type: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400"
+                >
+                  <option value="channel">Channel (📢)</option>
+                  <option value="group">Group / Chat (👥)</option>
+                  <option value="bot">Bot (🤖)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+                  Telegram Link
+                </label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://t.me/YourChannelOrBot"
+                  value={chatForm.link}
+                  onChange={(e) => setChatForm({ ...chatForm, link: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+                  Telegram Username or Chat ID (for Verification)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. @YourChannel or -100xxxxxxxx"
+                  value={chatForm.chatUsernameOrId}
+                  onChange={(e) =>
+                    setChatForm({ ...chatForm, chatUsernameOrId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-sky-400"
+                />
+                <p className="text-[10px] text-neutral-500 mt-1">
+                  Leave blank if checking a Bot or invite-only link without admin bot.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={createChatMutation.isPending}
+                className="w-full py-2.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wider transition active:scale-95 disabled:opacity-50"
+              >
+                {createChatMutation.isPending ? 'Adding Link...' : 'Save Join Requirement'}
               </button>
             </form>
           </div>

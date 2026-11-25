@@ -13,6 +13,7 @@ import {
   XCircle,
   Trophy,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { useTelegram } from '../store/useTelegram.js';
 
@@ -79,58 +80,91 @@ export const WalletPage = () => {
 
   return (
     <div className="space-y-3.5 pb-24 animate-fade-in">
-      {/* Balance Card */}
-      <div className="rounded-xl p-4 theme-card space-y-3">
+      {/* Luxury Web3 Wallet Card (Inspired by card theme.jpg) */}
+      <div className="rounded-3xl p-5 luxury-theme-card space-y-4">
+        {/* Top Header Tag */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-[#181818] text-neutral-300">
-              <Wallet className="w-4 h-4" />
-            </div>
-            <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
-              Total Balance
+            <span className="text-[10px] font-heading font-extrabold uppercase tracking-widest text-white/70">
+              TOTAL VALUE
             </span>
           </div>
 
           <button
             onClick={handleManualRefresh}
-            className={`p-1 rounded text-neutral-400 hover:text-white transition ${
+            className={`p-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white transition active:scale-95 ${
               isRefetching ? 'animate-spin text-sky-400' : ''
             }`}
+            title="Refresh balance"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div>
-          <span className="font-heading text-3xl font-black text-white">
-            ₹{currentBalance.toLocaleString('en-IN')}
-          </span>
+        {/* Hero Value */}
+        <div className="space-y-1">
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading text-3xl sm:text-4xl font-black text-white tracking-tight">
+              ₹{currentBalance.toLocaleString('en-IN')}
+            </span>
+            <span className="text-xs font-bold text-white/60 tracking-wider">INR</span>
+          </div>
+          <p className="text-xs text-white/70 font-medium leading-relaxed">
+            Points at live tournament rate, plus cash ready to withdraw
+          </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <button
-            onClick={() => {
-              setIsDepositOpen(true);
-              haptic.light();
-            }}
-            className="py-2.5 px-3 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95"
-          >
-            <ArrowDownRight className="w-4 h-4 stroke-[2.5]" />
-            Add Money
-          </button>
+        {/* Dual Sub-boxes (POINTS / USDT equivalent in card theme.jpg) */}
+        <div className="grid grid-cols-2 gap-2.5 pt-1">
+          <div className="luxury-subcard p-3 rounded-2xl space-y-1">
+            <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
+              TOTAL EARNINGS
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="font-heading font-extrabold text-sm sm:text-base text-white">
+                ₹{(user?.totalEarnings || 0).toLocaleString('en-IN')}
+              </span>
+            </div>
+          </div>
 
-          <button
-            onClick={() => {
-              setIsWithdrawOpen(true);
-              haptic.light();
-            }}
-            className="py-2.5 px-3 rounded-lg bg-[#141414] hover:bg-[#1A1A1A] border border-red-500/25 font-heading font-bold text-red-400 text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95"
-          >
-            <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
-            Withdraw
-          </button>
+          <div className="luxury-subcard p-3 rounded-2xl space-y-1">
+            <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
+              TOURNAMENTS WON
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
+              <span className="font-heading font-extrabold text-sm sm:text-base text-white">
+                {user?.tournamentsWon || 0} Wins
+              </span>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Action Buttons Row (Convert / Withdraw in card theme.jpg) */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => {
+            setIsDepositOpen(true);
+            haptic.light();
+          }}
+          className="py-3 px-3 rounded-2xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 text-white font-heading font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+        >
+          <ArrowDownRight className="w-4 h-4 text-sky-400 stroke-[2.5]" />
+          <span>Add Money</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setIsWithdrawOpen(true);
+            haptic.light();
+          }}
+          className="py-3 px-3 rounded-2xl blue-gradient-btn font-heading font-extrabold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-lg shadow-black/40"
+        >
+          <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
+          <span>Withdraw</span>
+        </button>
       </div>
 
       {/* Transactions Section */}

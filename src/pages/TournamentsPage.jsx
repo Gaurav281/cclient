@@ -196,18 +196,18 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
                   haptic.light();
                   navigate(`/tournament/${t._id}`);
                 }}
-                className="rounded-xl p-3.5 theme-card cursor-pointer active:scale-[0.99] space-y-3"
+                className="rounded-2xl p-4 luxury-theme-card cursor-pointer active:scale-[0.99] space-y-3"
               >
                 {/* Header Row: Title + Entry Fee Tag + Time/Status */}
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-heading font-bold text-sm text-white truncate">
+                  <h3 className="font-heading font-bold text-sm sm:text-base text-white truncate">
                     {t.title}
                   </h3>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="font-heading font-bold text-[11px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-sky-400">
+                    <span className="font-heading font-extrabold text-[11px] px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 text-white shadow-sm">
                       {t.entryFee === 0 ? 'FREE' : `₹${t.entryFee}`}
                     </span>
-                    <span className="text-[11px] font-medium text-neutral-400 flex items-center gap-1">
+                    <span className="text-[11px] font-medium text-neutral-300 flex items-center gap-1">
                       <Clock className="w-3 h-3 text-neutral-400" />
                       {isEnded ? (
                         <span className="text-red-400 font-semibold">Ended</span>
@@ -218,31 +218,31 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
                   </div>
                 </div>
 
-                {/* Structured Key Details Grid */}
-                <div className="grid grid-cols-3 gap-2 py-1 border-y border-white/5 text-center">
-                  <div className="p-1.5 rounded bg-[#141414]">
-                    <span className="text-[9px] text-neutral-400 font-medium uppercase block">
+                {/* Structured Key Details Grid (matching card theme sub-boxes) */}
+                <div className="grid grid-cols-3 gap-2 py-1">
+                  <div className="luxury-subcard p-2 text-center rounded-xl">
+                    <span className="text-[9px] text-white/60 font-heading font-bold uppercase tracking-wider block">
                       Prize Pool
                     </span>
-                    <span className="font-heading font-bold text-sm text-sky-400">
+                    <span className="font-heading font-black text-sm text-white">
                       ₹{totalPrize}
                     </span>
                   </div>
 
-                  <div className="p-1.5 rounded bg-[#141414]">
-                    <span className="text-[9px] text-neutral-400 font-medium uppercase block">
+                  <div className="luxury-subcard p-2 text-center rounded-xl">
+                    <span className="text-[9px] text-white/60 font-heading font-bold uppercase tracking-wider block">
                       Racers
                     </span>
-                    <span className="font-heading font-bold text-sm text-white">
+                    <span className="font-heading font-black text-sm text-white">
                       {t.currentParticipantsCount}/{t.totalParticipantsAllowed}
                     </span>
                   </div>
 
-                  <div className="p-1.5 rounded bg-[#141414]">
-                    <span className="text-[9px] text-neutral-400 font-medium uppercase block">
-                      Turns
+                  <div className="luxury-subcard p-2 text-center rounded-xl">
+                    <span className="text-[9px] text-white/60 font-heading font-bold uppercase tracking-wider block">
+                      Turns Left
                     </span>
-                    <span className="font-heading font-bold text-sm text-white">
+                    <span className="font-heading font-black text-sm text-white">
                       {isJoined ? `${turnsLeft}/${t.turnsPerUser}` : t.turnsPerUser}
                     </span>
                   </div>

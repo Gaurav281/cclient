@@ -70,4 +70,28 @@ export const adminApi = {
       body: { message, buttonText },
     });
   },
+
+  getRequiredChats: async () => {
+    return await apiRequest('/api/admin/required-chats');
+  },
+
+  createRequiredChat: async (data) => {
+    return await apiRequest('/api/admin/required-chats', {
+      method: 'POST',
+      body: data,
+    });
+  },
+
+  updateRequiredChat: async (id, data) => {
+    return await apiRequest(`/api/admin/required-chats/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+  },
+
+  deleteRequiredChat: async (id) => {
+    return await apiRequest(`/api/admin/required-chats/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };

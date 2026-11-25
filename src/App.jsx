@@ -11,6 +11,7 @@ import { walletApi } from './api/walletApi.js';
 import { TopNav } from './components/layout/TopNav.jsx';
 import { BottomNav } from './components/layout/BottomNav.jsx';
 import { DepositModal } from './components/wallet/DepositModal.jsx';
+import { JoinGateModal } from './components/auth/JoinGateModal.jsx';
 
 // Pages
 import { TournamentsPage } from './pages/TournamentsPage.jsx';
@@ -99,6 +100,9 @@ function AppContent() {
 
       {/* Global Deposit Modal Trigger */}
       <DepositModal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} />
+
+      {/* Mandatory Telegram Channels/Groups/Bot Verification Gate (join.jpg) */}
+      <JoinGateModal />
 
       {/* Toast Notifications with Cross Close Button */}
       <Toaster

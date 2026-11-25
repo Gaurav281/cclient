@@ -148,39 +148,39 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
         )}
       </div>
 
-      {/* Prize & Status Card */}
-      <div className="rounded-xl p-4 theme-card space-y-3">
+      {/* Prize & Status Card (Luxury Web3 Style) */}
+      <div className="rounded-2xl p-4 luxury-theme-card space-y-3.5">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-medium text-neutral-400 block">
-              Prize Pool
+            <span className="text-[10px] font-heading font-extrabold uppercase tracking-widest text-white/70 block">
+              TOTAL PRIZE POOL
             </span>
-            <span className="font-heading text-2xl font-black text-sky-400">
+            <span className="font-heading text-3xl font-black text-white">
               ₹{totalPrize}
             </span>
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] uppercase font-medium text-neutral-400 block">
+            <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
               Entry Fee
             </span>
-            <span className="font-heading text-base font-bold text-white">
+            <span className="font-heading text-base font-extrabold text-white px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 inline-block mt-0.5">
               {tournament.entryFee === 0 ? 'FREE' : `₹${tournament.entryFee}`}
             </span>
           </div>
         </div>
 
         {/* Rewards per Rank */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-white/5">
+        <div className="grid grid-cols-3 gap-2 pt-1 border-t border-white/10">
           {tournament.rewards?.map((reward, idx) => (
             <div
               key={idx}
-              className="p-2 rounded-lg text-center bg-[#141414] border border-white/5"
+              className="p-2.5 rounded-xl text-center luxury-subcard"
             >
-              <div className="text-[10px] text-neutral-400 font-medium">
+              <div className="text-[10px] text-white/60 font-heading font-bold uppercase tracking-wider">
                 Rank #{idx + 1}
               </div>
-              <div className="font-heading font-bold text-sm text-white mt-0.5">
+              <div className="font-heading font-black text-sm text-white mt-0.5">
                 ₹{reward}
               </div>
             </div>
@@ -189,17 +189,17 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
 
         {/* Participation Stats */}
         {isJoined && (
-          <div className="p-2.5 rounded-lg bg-[#141414] border border-white/5 flex items-center justify-between text-xs">
+          <div className="p-3 rounded-xl luxury-subcard flex items-center justify-between text-xs">
             <div>
-              <span className="text-neutral-400">Best Score:</span>{' '}
-              <span className="font-heading font-bold text-sky-400">
+              <span className="text-white/60 font-medium">Best Score:</span>{' '}
+              <span className="font-heading font-black text-white">
                 {tournament.userParticipation.bestScore}
               </span>
             </div>
             <div>
-              <span className="text-neutral-400">Turns:</span>{' '}
-              <span className="font-heading font-bold text-emerald-400">
-                {turnsLeft} / {tournament.turnsPerUser}
+              <span className="text-white/60 font-medium">Turns:</span>{' '}
+              <span className="font-heading font-black text-white">
+                {turnsLeft}/{tournament.turnsPerUser}
               </span>
             </div>
           </div>
