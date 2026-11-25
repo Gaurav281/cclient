@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../store/useAuthStore.js';
 import { authApi } from '../api/authApi.js';
-import { checkServerHealth } from '../api/client.js';
 import { useThemeStore, THEMES } from '../store/useThemeStore.js';
 import {
   Trophy,
@@ -14,8 +13,6 @@ import {
   Save,
   Palette,
   Check,
-  Server,
-  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTelegram } from '../store/useTelegram.js';
@@ -27,29 +24,6 @@ export const ProfilePage = () => {
 
   const [upiInput, setUpiInput] = useState('');
   const [isSavingUpi, setIsSavingUpi] = useState(false);
-
-  // Clean System status (Green 🟢 / Red 🔴 light only, no text clutter)
-  const [serverStatus, setServerStatus] = useState('checking'); // 'checking' | 'online' | 'sleeping'
-
-  const pingServer = useCallback(async () => {
-    try {
-      const res = await checkServerHealth(4000);
-      if (res.ok) {
-        setServerStatus('online');
-      } else {
-        setServerStatus('sleeping');
-      }
-    } catch (err) {
-      setServerStatus('sleeping');
-    }
-  }, []);
-
-  useEffect(() => {
-    pingServer();
-    // 14-minute client keep-alive interval if user keeps tab open
-    const interval = setInterval(pingServer, 14 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [pingServer]);
 
   useEffect(() => {
     if (user?.savedUpiId) {
@@ -197,30 +171,6 @@ export const ProfilePage = () => {
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* System Status (Clean Green 🟢 / Red 🔴 light only, no info text) */}
-      <div
-        onClick={() => {
-          haptic.selection();
-          pingServer();
-        }}
-        className="rounded-xl p-3 theme-card flex items-center justify-between cursor-pointer active:scale-[0.99] transition select-none"
-      >
-        <div className="flex items-center gap-2">
-          <Server className="w-4 h-4 text-sky-400" />
-          <span className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-300">
-            System Status
-          </span>
-        </div>
-
-        {/* Pure Glowing Indicator Light: Always Red Light as requested */}
-        <div className="flex items-center pr-1">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_10px_#EF4444]" />
-          </span>
         </div>
       </div>
 

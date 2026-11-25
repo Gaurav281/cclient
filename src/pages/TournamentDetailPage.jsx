@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tournamentApi } from '../api/tournamentApi.js';
@@ -7,6 +7,9 @@ import {
   Trophy,
   Gamepad2,
   Trash2,
+  Copy,
+  Share2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/useAuthStore.js';
@@ -19,6 +22,8 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
   const queryClient = useQueryClient();
   const { user, updateWalletBalance } = useAuthStore();
   const { haptic } = useTelegram();
+  const [inputReferralCode, setInputReferralCode] = useState('');
+  const [showReferralInput, setShowReferralInput] = useState(false);
 
   // Hook Telegram native back button to return to main tournaments page
   useEffect(() => {
@@ -46,10 +51,12 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
   });
 
   const joinMutation = useMutation({
-    mutationFn: () => tournamentApi.joinTournament(tournamentId),
+    mutationFn: () => tournamentApi.joinTournament(tournamentId, inputReferralCode.trim()),
     onSuccess: (res) => {
       toast.success(res.message || 'Joined tournament!');
       haptic.success();
+      setInputReferralCode('');
+      setShowReferralInput(false);
       if (res.walletBalance !== undefined) {
         updateWalletBalance(res.walletBalance);
       }
@@ -118,6 +125,28 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
       return;
     }
     joinMutation.mutate();
+  };
+
+  const handleCopyReferralCode = () => {
+    const code = tournament?.userParticipation?.referralCode;
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    toast.success(`Referral code ${code} copied!`);
+    haptic.success();
+  };
+
+  const handleShareOnTelegram = () => {
+    const code = tournament?.userParticipation?.referralCode;
+    if (!code) return;
+    const shareText = `🏎️ Race with me in "${tournament.title}" on Firefly! Use my code [ ${code} ] when joining to get extra turns! 🏆\nPlay here: https://t.me/FireflyPlayBot/play`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/FireflyPlayBot/play')}&text=${encodeURIComponent(shareText)}`;
+
+    const tg = window.Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, '_blank');
+    }
   };
 
   return (
@@ -210,26 +239,123 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
           turnsLeft > 0 && !isEnded ? (
             <button
               onClick={() => navigate(`/tournament/${tournament._id}/play`)}
-              className="w-full py-2.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="w-full py-2.5 rounded-xl blue-gradient-btn font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95 shadow-md"
             >
               <Gamepad2 className="w-4 h-4" /> Start Turn ({turnsLeft} Left)
             </button>
           ) : null
         ) : !isEnded && !tournament.isFull ? (
-          <button
-            onClick={handleJoin}
-            disabled={joinMutation.isPending}
-            className="w-full py-2.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95"
-          >
-            <Trophy className="w-3.5 h-3.5" />
-            {joinMutation.isPending
-              ? 'Joining...'
-              : tournament.entryFee > 0
-              ? `Join (₹${tournament.entryFee})`
-              : 'Join Free'}
-          </button>
+          <div className="space-y-2">
+            {!showReferralInput ? (
+              <button
+                type="button"
+                onClick={() => setShowReferralInput(true)}
+                className="text-[11px] text-sky-400 hover:underline flex items-center justify-center gap-1 w-full"
+              >
+                <span>Have a friend&apos;s 6-digit referral code?</span>
+              </button>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5">
+                <label className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
+                  Friend&apos;s 6-Digit Referral Code (Optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. 582914"
+                    value={inputReferralCode}
+                    onChange={(e) => setInputReferralCode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-3 py-1.5 rounded-lg bg-[#141414] border border-white/10 text-white font-mono text-center text-sm font-bold tracking-widest focus:outline-none focus:border-amber-400"
+                  />
+                  {inputReferralCode && (
+                    <button
+                      type="button"
+                      onClick={() => setInputReferralCode('')}
+                      className="text-neutral-400 hover:text-white text-xs px-1"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleJoin}
+              disabled={joinMutation.isPending}
+              className="w-full py-2.5 rounded-xl blue-gradient-btn font-heading font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition active:scale-95 shadow-md disabled:opacity-50"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              {joinMutation.isPending
+                ? 'Joining...'
+                : tournament.entryFee > 0
+                ? `Join (₹${tournament.entryFee})`
+                : 'Join Free'}
+            </button>
+          </div>
         ) : null}
       </div>
+
+      {/* Tournament 6-Digit Referral Code Card (Earn Extra Turns) */}
+      {isJoined && (
+        <div
+          className={`p-4 rounded-2xl luxury-subcard space-y-3 ${
+            turnsLeft === 0
+              ? 'border-amber-400/50 bg-amber-400/[0.06] shadow-lg shadow-amber-500/10'
+              : ''
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-heading font-extrabold uppercase tracking-widest text-white/70">
+              REFERRAL CODE (EARN +1 TURN)
+            </span>
+            {(tournament.userParticipation?.referralBonusTurnsEarned || 0) > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                +{tournament.userParticipation.referralBonusTurnsEarned} turns earned!
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-black/50 border border-white/10">
+            <span className="font-mono font-black text-2xl tracking-[0.25em] text-amber-400 pl-1">
+              {tournament.userParticipation?.referralCode || '------'}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCopyReferralCode}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-heading font-bold text-xs flex items-center gap-1.5 active:scale-95 transition"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleShareOnTelegram}
+                className="px-3 py-1.5 rounded-lg blue-gradient-btn font-heading font-bold text-xs flex items-center gap-1.5 active:scale-95 transition"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </button>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-white/70 leading-relaxed">
+            {turnsLeft === 0 ? (
+              <span className="text-amber-300 font-medium">
+                ⚠️ Out of turns? Share your 6-digit code! Every time someone joins using your code, you get{' '}
+                <strong className="text-white font-bold">+1 EXTRA TURN</strong> immediately! 🏎️💨
+              </span>
+            ) : (
+              <span>
+                Share your code with other racers. Whenever someone joins using your code, you get{' '}
+                <strong className="text-amber-400 font-bold">+1 EXTRA TURN</strong> automatically!
+              </span>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Leaderboard Table */}
       <div className="space-y-2">

@@ -1004,6 +1004,25 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
               </div>
             )}
 
+            {/* Out of Turns - Share Referral Code for +1 Extra Turn */}
+            {tournament &&
+              (gameState.submissionResult?.turnsLeft === 0 || turnsLeft === 0) &&
+              tournament.userParticipation?.referralCode && (
+                <div className="p-3 rounded-2xl bg-amber-400/[0.08] border border-amber-400/30 text-xs space-y-1 text-center">
+                  <span className="font-heading font-extrabold text-amber-300 text-xs block">
+                    Out of turns? Earn +1 Extra Turn!
+                  </span>
+                  <div className="flex items-center justify-center gap-1.5 py-0.5">
+                    <span className="font-mono font-black text-amber-400 text-sm tracking-widest px-2.5 py-0.5 rounded bg-black/60 border border-amber-400/20">
+                      {tournament.userParticipation.referralCode}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-neutral-300">
+                    Whenever a friend joins with your code, you get +1 EXTRA TURN!
+                  </p>
+                </div>
+              )}
+
             <div className="flex items-center gap-2.5 pt-1">
               {(!tournament || (gameState.submissionResult?.turnsLeft > 0)) && (
                 <button

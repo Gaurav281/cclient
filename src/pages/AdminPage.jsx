@@ -58,7 +58,6 @@ export const AdminPage = () => {
     title: '',
     type: 'channel',
     link: '',
-    chatUsernameOrId: '',
     isActive: true,
   });
 
@@ -622,11 +621,6 @@ export const AdminPage = () => {
                         <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                       </a>
                     </p>
-                    {chat.chatUsernameOrId && (
-                      <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
-                        API Check: {chat.chatUsernameOrId}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -957,24 +951,6 @@ export const AdminPage = () => {
                   onChange={(e) => setChatForm({ ...chatForm, link: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400"
                 />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
-                  Telegram Username or Chat ID (for Verification)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. @YourChannel or -100xxxxxxxx"
-                  value={chatForm.chatUsernameOrId}
-                  onChange={(e) =>
-                    setChatForm({ ...chatForm, chatUsernameOrId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-sky-400"
-                />
-                <p className="text-[10px] text-neutral-500 mt-1">
-                  Leave blank if checking a Bot or invite-only link without admin bot.
-                </p>
               </div>
 
               <button

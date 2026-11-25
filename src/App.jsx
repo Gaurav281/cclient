@@ -6,6 +6,8 @@ import { useAuthStore } from './store/useAuthStore.js';
 import { useTelegram } from './store/useTelegram.js';
 import { tournamentApi } from './api/tournamentApi.js';
 import { walletApi } from './api/walletApi.js';
+import { systemApi } from './api/systemApi.js';
+import { AppLoadingScreen } from './components/common/AppLoadingScreen.jsx';
 
 // Layout & Components
 import { TopNav } from './components/layout/TopNav.jsx';
@@ -40,27 +42,46 @@ function AppContent() {
   const { initAuth, isLoading, user, updateWalletBalance } = useAuthStore();
   const { initTelegram } = useTelegram();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Initialize Telegram, Authenticate & Preload Core App Data on Mount
+  // Initialize Telegram, Authenticate, Verify Mandatory Channels & Preload Cache on Mount
   useEffect(() => {
     initTelegram();
-    initAuth().then(() => {
-      // Preload tournaments and wallet cache so all pages open instantly with zero delay
-      queryClient.prefetchQuery({
-        queryKey: ['tournaments'],
-        queryFn: tournamentApi.getTournaments,
-      });
-      queryClient.prefetchQuery({
-        queryKey: ['wallet'],
-        queryFn: async () => {
-          const res = await walletApi.getWallet();
-          if (res?.balance !== undefined) {
-            updateWalletBalance(res.balance);
-          }
-          return res;
-        },
-      });
-    });
+    async function startup() {
+      try {
+        await initAuth();
+
+        // Check required channels and prefetch core data in parallel
+        await Promise.allSettled([
+          queryClient.prefetchQuery({
+            queryKey: ['requiredChats'],
+            queryFn: systemApi.getRequiredChats,
+            staleTime: 1000 * 60 * 5,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: ['tournaments'],
+            queryFn: tournamentApi.getTournaments,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: ['wallet'],
+            queryFn: async () => {
+              const res = await walletApi.getWallet();
+              if (res?.balance !== undefined) {
+                updateWalletBalance(res.balance);
+              }
+              return res;
+            },
+          }),
+        ]);
+      } catch (e) {
+        console.error('[Startup] Initialization error:', e);
+      } finally {
+        // Smooth transition out of loading screen
+        setTimeout(() => setIsInitialLoading(false), 350);
+      }
+    }
+
+    startup();
   }, []);
 
   // In full-screen game mode, hide top and bottom navbars
@@ -102,7 +123,10 @@ function AppContent() {
       <DepositModal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} />
 
       {/* Mandatory Telegram Channels/Groups/Bot Verification Gate (join.jpg) */}
-      <JoinGateModal />
+      {!isInitialLoading && <JoinGateModal />}
+
+      {/* Initial Startup Loading Screen */}
+      <AppLoadingScreen isVisible={isInitialLoading} />
 
       {/* Toast Notifications with Cross Close Button */}
       <Toaster

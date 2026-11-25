@@ -9,9 +9,10 @@ export const tournamentApi = {
     return await apiRequest(`/api/tournaments/${tournamentId}`);
   },
 
-  joinTournament: async (tournamentId) => {
+  joinTournament: async (tournamentId, referralCode) => {
     return await apiRequest(`/api/tournaments/${tournamentId}/join`, {
       method: 'POST',
+      body: referralCode ? { referralCode } : {},
     });
   },
 };
