@@ -32,7 +32,7 @@ const getStoredTheme = () => {
     const saved = localStorage.getItem('firefly_theme');
     if (saved && THEMES[saved]) return saved;
   } catch (e) {}
-  return 'blue';
+  return 'yellow';
 };
 
 const applyThemeToDOM = (theme) => {

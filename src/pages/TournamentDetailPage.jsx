@@ -37,6 +37,11 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
   const { data, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
     queryFn: () => tournamentApi.getTournamentById(tournamentId),
+    initialData: () => {
+      const cached = queryClient.getQueryData(['tournaments']);
+      return cached?.tournaments?.find((t) => t._id === tournamentId);
+    },
+    initialDataUpdatedAt: () => queryClient.getQueryState(['tournaments'])?.dataUpdatedAt,
     refetchInterval: 8000,
   });
 

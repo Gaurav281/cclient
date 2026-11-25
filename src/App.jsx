@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/useAuthStore.js';
 import { useTelegram } from './store/useTelegram.js';
+import { tournamentApi } from './api/tournamentApi.js';
+import { walletApi } from './api/walletApi.js';
 
 // Layout & Components
 import { TopNav } from './components/layout/TopNav.jsx';
@@ -33,14 +35,31 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const location = useLocation();
-  const { initAuth, isLoading, user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const { initAuth, isLoading, user, updateWalletBalance } = useAuthStore();
   const { initTelegram } = useTelegram();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
 
-  // Initialize Telegram & Authenticate on App Mount
+  // Initialize Telegram, Authenticate & Preload Core App Data on Mount
   useEffect(() => {
     initTelegram();
-    initAuth();
+    initAuth().then(() => {
+      // Preload tournaments and wallet cache so all pages open instantly with zero delay
+      queryClient.prefetchQuery({
+        queryKey: ['tournaments'],
+        queryFn: tournamentApi.getTournaments,
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['wallet'],
+        queryFn: async () => {
+          const res = await walletApi.getWallet();
+          if (res?.balance !== undefined) {
+            updateWalletBalance(res.balance);
+          }
+          return res;
+        },
+      });
+    });
   }, []);
 
   // In full-screen game mode, hide top and bottom navbars

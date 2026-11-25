@@ -13,6 +13,7 @@ import {
   X,
   ArrowLeft,
   Trash2,
+  Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +40,13 @@ export const AdminPage = () => {
     upiId: '',
     upiName: '',
   });
+
+  // Admin Broadcast state
+  const [broadcastForm, setBroadcastForm] = useState({
+    message: '',
+    buttonText: '🎮 Play Firefly',
+  });
+  const [broadcastStatus, setBroadcastStatus] = useState(null);
 
   // Queries
   const { data: statsData, refetch: refetchStats } = useQuery({
@@ -152,6 +160,17 @@ export const AdminPage = () => {
     onError: (err) => toast.error(err.message || 'Update failed'),
   });
 
+  const broadcastMutation = useMutation({
+    mutationFn: () =>
+      adminApi.broadcastMessage(broadcastForm.message, broadcastForm.buttonText),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Broadcast message sent!');
+      setBroadcastStatus(res);
+      setBroadcastForm({ message: '', buttonText: '🎮 Play Firefly' });
+    },
+    onError: (err) => toast.error(err.message || 'Failed to send broadcast'),
+  });
+
   const handleWinnerCountChange = (count) => {
     const num = Number(count);
     let newRewards = [...form.rewards];
@@ -228,6 +247,7 @@ export const AdminPage = () => {
           { id: 'deposits', label: 'Deposits', count: stats.pendingDeposits },
           { id: 'withdrawals', label: 'Withdrawals', count: stats.pendingWithdrawals },
           { id: 'settings', label: 'Settings' },
+          { id: 'broadcast', label: 'Broadcast' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -495,6 +515,108 @@ export const AdminPage = () => {
               Save Settings
             </button>
           </div>
+        </div>
+      )}
+
+      {/* TAB 5: BROADCAST TO BOT USERS */}
+      {activeTab === 'broadcast' && (
+        <div className="p-4 rounded-xl bg-[#0E0E0E] border border-white/10 space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center text-sky-400">
+              <Send className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-heading font-bold text-sm text-white">Broadcast Message</h3>
+              <p className="text-[11px] text-neutral-400">
+                Send a notification to all registered bot users on Telegram with a Mini App button.
+              </p>
+            </div>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!broadcastForm.message.trim()) {
+                toast.error('Please enter a message to broadcast');
+                return;
+              }
+              if (window.confirm('Send this broadcast message to all Telegram bot users?')) {
+                broadcastMutation.mutate();
+              }
+            }}
+            className="space-y-3.5"
+          >
+            <div>
+              <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+                Message Content (Markdown supported)
+              </label>
+              <textarea
+                rows={4}
+                value={broadcastForm.message}
+                onChange={(e) =>
+                  setBroadcastForm({ ...broadcastForm, message: e.target.value })
+                }
+                placeholder="🔥 New Grand Prix Tournament is LIVE! Join now to race, collect diamonds, and win cash prizes! 🏎️💨"
+                className="w-full px-3 py-2.5 rounded-xl bg-[#141414] border border-white/10 text-white placeholder-neutral-600 text-xs focus:outline-none focus:border-sky-400 resize-none font-sans"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+                Button Label (Opens Mini App)
+              </label>
+              <input
+                type="text"
+                value={broadcastForm.buttonText}
+                onChange={(e) =>
+                  setBroadcastForm({ ...broadcastForm, buttonText: e.target.value })
+                }
+                placeholder="🎮 Play Firefly"
+                className="w-full px-3 py-2 rounded-xl bg-[#141414] border border-white/10 text-white placeholder-neutral-600 text-xs focus:outline-none focus:border-sky-400"
+              />
+            </div>
+
+            {/* Message Preview */}
+            {broadcastForm.message && (
+              <div className="p-3 rounded-xl bg-[#090909] border border-white/10 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
+                  Preview (How users see it in Telegram)
+                </span>
+                <div className="p-2.5 rounded-lg bg-[#141414] border border-white/5 space-y-2.5 text-xs text-neutral-200 whitespace-pre-wrap">
+                  {broadcastForm.message}
+                  <div className="pt-1">
+                    <div className="w-full py-1.5 rounded-lg bg-sky-400/20 border border-sky-400/40 text-sky-300 font-heading font-bold text-center text-xs">
+                      {broadcastForm.buttonText || '🎮 Play Firefly'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Status Feedback */}
+            {broadcastStatus && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-400 space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" /> Broadcast Delivered
+                </div>
+                <p className="text-[11px] text-emerald-300/80">
+                  Targeted: {broadcastStatus.totalTargeted} | Delivered: {broadcastStatus.sentCount} | Failed: {broadcastStatus.failedCount}
+                </p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={broadcastMutation.isPending || !broadcastForm.message.trim()}
+              className="w-full py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-black font-heading font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5 fill-black" />
+              <span>
+                {broadcastMutation.isPending ? 'Sending Broadcast...' : 'Send Broadcast to All Bot Users'}
+              </span>
+            </button>
+          </form>
         </div>
       )}
 

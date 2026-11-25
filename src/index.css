@@ -28,26 +28,32 @@
   /* Dynamic Theme-Infused Surface Cards */
   .theme-card,
   .premium-card {
-    background: radial-gradient(120% 120% at 88% 12%, rgba(var(--color-primary-rgb) / 0.07) 0%, rgba(18, 18, 18, 0.75) 55%, #0B0B0B 100%), #0A0A0A;
-    border: 1px solid rgba(var(--color-primary-rgb) / 0.16);
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
+    background: radial-gradient(130% 130% at 88% 8%, rgba(var(--color-primary-rgb) / 0.12) 0%, rgba(22, 22, 25, 0.88) 45%, #0B0B0E 100%), #0A0A0C;
+    border: 1.5px solid rgba(var(--color-primary-rgb) / 0.28);
+    box-shadow: 0 6px 24px -2px rgba(0, 0, 0, 0.75), 0 0 12px -3px rgba(var(--color-primary-rgb) / 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .theme-card:hover,
   .premium-card:hover {
-    border-color: rgba(var(--color-primary-rgb) / 0.35);
-    box-shadow: 0 8px 24px -3px rgba(0, 0, 0, 0.8), 0 0 16px -2px rgba(var(--color-primary-rgb) / 0.12);
+    border-color: rgba(var(--color-primary-rgb) / 0.55);
+    box-shadow: 0 8px 28px -2px rgba(0, 0, 0, 0.85), 0 0 20px -2px rgba(var(--color-primary-rgb) / 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   .theme-card-elevated,
   .premium-card-elevated {
-    background: linear-gradient(145deg, rgba(var(--color-primary-rgb) / 0.12) 0%, rgba(24, 24, 24, 0.95) 45%, #101010 100%);
-    border: 1px solid rgba(var(--color-primary-rgb) / 0.24);
-    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(14px);
+    background: linear-gradient(145deg, rgba(var(--color-primary-rgb) / 0.16) 0%, rgba(26, 26, 30, 0.95) 45%, #101014 100%);
+    border: 2px solid rgba(var(--color-primary-rgb) / 0.38);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 16px -2px rgba(var(--color-primary-rgb) / 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-card-elevated:hover,
+  .premium-card-elevated:hover {
+    border-color: rgba(var(--color-primary-rgb) / 0.65);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.9), 0 0 24px -1px rgba(var(--color-primary-rgb) / 0.25);
   }
 
   .blue-gradient-btn {

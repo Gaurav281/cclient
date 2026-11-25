@@ -98,6 +98,14 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
     navigate(`/tournament/${tournament._id}/play`);
   };
 
+  const prefetchTournament = (tournamentId) => {
+    queryClient.prefetchQuery({
+      queryKey: ['tournament', tournamentId],
+      queryFn: () => tournamentApi.getTournamentById(tournamentId),
+      staleTime: 1000 * 30,
+    });
+  };
+
   return (
     <div className="space-y-3.5 pb-24 animate-fade-in">
       {/* Practice Car Game Banner */}
@@ -106,23 +114,23 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
           haptic.light();
           navigate('/play');
         }}
-        className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-all group theme-card border border-white/10 shadow-lg"
+        className="relative w-full aspect-[1200/670] rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-all group theme-card shadow-xl"
       >
-        {/* Full Cover Car Game Image */}
+        {/* Full Cover Car Game Image (100% visible top & bottom) */}
         <img
           src="/car-game.jpeg"
           alt="Practice Car Game"
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-[1.02] transition-transform duration-500"
         />
 
         {/* Subtle Right-side Gradient Shade for Button Contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/20 to-black/80 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/75 pointer-events-none" />
 
         {/* Practice Now Button in the Middle of Right Side */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+        <div className="absolute right-3.5 sm:right-5 top-1/2 -translate-y-1/2 z-10">
           <button
             type="button"
-            className="px-4 py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-black font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-black/80 group-hover:scale-105 transition-all active:scale-95 border border-white/20"
+            className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl blue-gradient-btn font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-black/80 group-hover:scale-105 transition-all active:scale-95 border border-white/20"
           >
             <Play className="w-3.5 h-3.5 fill-black" />
             <span>Practice Now</span>
@@ -182,7 +190,12 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
             return (
               <div
                 key={t._id}
-                onClick={() => navigate(`/tournament/${t._id}`)}
+                onPointerEnter={() => prefetchTournament(t._id)}
+                onTouchStart={() => prefetchTournament(t._id)}
+                onClick={() => {
+                  haptic.light();
+                  navigate(`/tournament/${t._id}`);
+                }}
                 className="rounded-xl p-3.5 theme-card cursor-pointer active:scale-[0.99] space-y-3"
               >
                 {/* Header Row: Title + Entry Fee Tag + Time/Status */}

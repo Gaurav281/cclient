@@ -63,4 +63,11 @@ export const adminApi = {
       body: { upiId, upiName },
     });
   },
+
+  broadcastMessage: async (message, buttonText) => {
+    return await apiRequest('/api/admin/broadcast', {
+      method: 'POST',
+      body: { message, buttonText },
+    });
+  },
 };

@@ -28,78 +28,27 @@ export const ProfilePage = () => {
   const [upiInput, setUpiInput] = useState('');
   const [isSavingUpi, setIsSavingUpi] = useState(false);
 
-  // System status & Render free plan 40s wake monitor
+  // Clean System status (Green 🟢 / Red 🔴 light only, no text clutter)
   const [serverStatus, setServerStatus] = useState('checking'); // 'checking' | 'online' | 'sleeping'
-  const [latency, setLatency] = useState(null);
-  const [wakeTimer, setWakeTimer] = useState(40);
-  const [isWaking, setIsWaking] = useState(false);
-  const wakeIntervalRef = useRef(null);
-
-  const startWakeupFlow = useCallback(() => {
-    setIsWaking(true);
-    setServerStatus('sleeping');
-    setWakeTimer(40);
-
-    if (wakeIntervalRef.current) clearInterval(wakeIntervalRef.current);
-
-    // Keep active request so Render receives wake-up traffic
-    checkServerHealth(60000)
-      .then((res) => {
-        setServerStatus('online');
-        setLatency(res.latency);
-        setIsWaking(false);
-        if (wakeIntervalRef.current) clearInterval(wakeIntervalRef.current);
-        toast.success('Backend server is online & active!');
-        haptic.success();
-      })
-      .catch(() => {});
-
-    let remaining = 40;
-    wakeIntervalRef.current = setInterval(async () => {
-      remaining -= 1;
-      setWakeTimer(Math.max(0, remaining));
-
-      try {
-        const quick = await checkServerHealth(2500);
-        if (quick.ok) {
-          clearInterval(wakeIntervalRef.current);
-          setServerStatus('online');
-          setLatency(quick.latency);
-          setIsWaking(false);
-          toast.success('Backend server is online & active!');
-          haptic.success();
-          return;
-        }
-      } catch (e) {}
-
-      if (remaining <= 0) {
-        clearInterval(wakeIntervalRef.current);
-        setIsWaking(false);
-      }
-    }, 1000);
-  }, [haptic]);
 
   const pingServer = useCallback(async () => {
-    setServerStatus('checking');
     try {
-      const res = await checkServerHealth(3500);
+      const res = await checkServerHealth(4000);
       if (res.ok) {
         setServerStatus('online');
-        setLatency(res.latency);
-        setIsWaking(false);
-        if (wakeIntervalRef.current) clearInterval(wakeIntervalRef.current);
-        return;
+      } else {
+        setServerStatus('sleeping');
       }
     } catch (err) {
-      startWakeupFlow();
+      setServerStatus('sleeping');
     }
-  }, [startWakeupFlow]);
+  }, []);
 
   useEffect(() => {
     pingServer();
-    return () => {
-      if (wakeIntervalRef.current) clearInterval(wakeIntervalRef.current);
-    };
+    // 14-minute client keep-alive interval if user keeps tab open
+    const interval = setInterval(pingServer, 14 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [pingServer]);
 
   useEffect(() => {
@@ -251,86 +200,39 @@ export const ProfilePage = () => {
         </div>
       </div>
 
-      {/* System Status (Render Free Plan Monitor & 40s Wakeup Timer) */}
-      <div className="rounded-xl p-3.5 theme-card space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Server className="w-4 h-4 text-sky-400" />
-            <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-300">
-              System Status
-            </h3>
-          </div>
-
-          {/* Green / Red Indicator Light */}
-          <div className="flex items-center gap-1.5">
-            {serverStatus === 'online' ? (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse" />
-                Online {latency ? `(${latency}ms)` : ''}
-              </span>
-            ) : serverStatus === 'sleeping' ? (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400 text-[10px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                Sleeping (Idle &gt; 15m)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 text-[10px] font-medium">
-                <RefreshCw className="w-2.5 h-2.5 animate-spin text-sky-400" />
-                Checking...
-              </span>
-            )}
-          </div>
+      {/* System Status (Clean Green 🟢 / Red 🔴 light only, no info text) */}
+      <div
+        onClick={() => {
+          haptic.selection();
+          pingServer();
+        }}
+        className="rounded-xl p-3 theme-card flex items-center justify-between cursor-pointer active:scale-[0.99] transition select-none"
+      >
+        <div className="flex items-center gap-2">
+          <Server className="w-4 h-4 text-sky-400" />
+          <span className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-300">
+            System Status
+          </span>
         </div>
 
-        {/* Status Details / 40s Countdown Box */}
-        {serverStatus === 'sleeping' ? (
-          <div className="p-3 rounded-lg bg-[#141414] border border-red-500/20 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-300 font-medium flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-400" />
-                Waking up Render backend...
-              </span>
-              <span className="font-mono font-bold text-sky-400 text-sm">
-                {wakeTimer}s
-              </span>
-            </div>
-
-            {/* 40-second animated progress bar */}
-            <div className="w-full h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
-              <div
-                className="h-full bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 transition-all duration-1000 ease-linear rounded-full"
-                style={{ width: `${Math.max(0, Math.min(100, ((40 - wakeTimer) / 40) * 100))}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-neutral-400 leading-tight">
-              Render free tier sleeps after 15m idle. Server typically boots in ~40 seconds.
-            </p>
-          </div>
-        ) : serverStatus === 'online' ? (
-          <div className="p-2.5 rounded-lg bg-[#141414] border border-white/5 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
-              <span className="text-neutral-300 text-[11px]">API Server & Database Active</span>
-            </div>
-            <span className="font-mono text-[10px] text-neutral-400">
-              {latency ? `${latency}ms latency` : 'Connected'}
+        {/* Pure Glowing Indicator Light Only */}
+        <div className="flex items-center pr-1">
+          {serverStatus === 'online' ? (
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-[0_0_10px_#10B981]" />
             </span>
-          </div>
-        ) : null}
-
-        {/* Action Button: Check / Wake Server */}
-        <button
-          type="button"
-          onClick={() => {
-            haptic.selection();
-            pingServer();
-          }}
-          disabled={isWaking}
-          className="w-full py-2 rounded-lg bg-[#141414] hover:bg-[#1C1C1C] border border-white/10 text-white font-heading font-semibold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isWaking ? 'animate-spin text-sky-400' : 'text-neutral-400'}`} />
-          <span>{serverStatus === 'sleeping' ? 'Waking Up Server...' : 'Check Server Status'}</span>
-        </button>
+          ) : serverStatus === 'sleeping' ? (
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_10px_#EF4444]" />
+            </span>
+          ) : (
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-pulse inline-flex rounded-full h-2.5 w-2.5 bg-neutral-500" />
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Career Stats Grid */}
