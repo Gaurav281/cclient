@@ -56,7 +56,7 @@ function AppContent() {
           queryClient.prefetchQuery({
             queryKey: ['requiredChats'],
             queryFn: systemApi.getRequiredChats,
-            staleTime: 1000 * 60 * 5,
+            staleTime: 1000 * 30,
           }),
           queryClient.prefetchQuery({
             queryKey: ['tournaments'],

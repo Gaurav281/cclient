@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { systemApi } from '../../api/systemApi.js';
 import { useAuthStore } from '../../store/useAuthStore.js';
@@ -8,25 +8,25 @@ import { toast } from 'sonner';
 import { FireLogo } from '../common/FireLogo.jsx';
 
 export const JoinGateModal = () => {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user } = useAuthStore();
   const { haptic } = useTelegram();
   const queryClient = useQueryClient();
 
   const [clickedChatIds, setClickedChatIds] = useState(new Set());
 
-  // Fetch required chats
+  // Fetch required chats with responsive cache
   const { data, isLoading } = useQuery({
     queryKey: ['requiredChats'],
     queryFn: systemApi.getRequiredChats,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
   });
 
   const requiredChats = data?.requiredChats || [];
-  const hasCompleted = Boolean(data?.hasCompletedRequiredChats || user?.hasCompletedRequiredChats);
-  const serverJoinedIds = new Set(data?.joinedChats || user?.joinedChats || []);
+  const hasCompleted = data?.hasCompletedRequiredChats === true;
+  const serverJoinedIds = new Set((data?.joinedChats || []).map(String));
 
   const totalRequired = requiredChats.length;
-  // Combine server joined and local verified
+  // Combine server joined and local verified clicks
   const joinedCount = requiredChats.filter(
     (c) => serverJoinedIds.has(String(c._id)) || clickedChatIds.has(String(c._id))
   ).length;
@@ -37,6 +37,16 @@ export const JoinGateModal = () => {
       if (res.allJoined) {
         toast.success(res.message || 'All channels verified! Welcome to Firefly!');
         haptic.success();
+        // Immediately sync auth store
+        if (user) {
+          useAuthStore.setState({
+            user: {
+              ...user,
+              hasCompletedRequiredChats: true,
+              joinedChats: res.joinedChats || [],
+            },
+          });
+        }
         queryClient.invalidateQueries({ queryKey: ['requiredChats'] });
         queryClient.invalidateQueries({ queryKey: ['tournaments'] });
       } else {
@@ -50,8 +60,8 @@ export const JoinGateModal = () => {
     },
   });
 
-  // If no required chats exist or user is already verified, do not show modal
-  if (isLoading || totalRequired === 0 || hasCompleted) {
+  // If loading, or no required chats exist, or user is strictly verified by server, do not show modal
+  if (isLoading || !data || totalRequired === 0 || hasCompleted) {
     return null;
   }
 
@@ -104,10 +114,10 @@ export const JoinGateModal = () => {
   return (
     <div className="fixed inset-0 z-50 bg-[#F4F4F6] text-[#111111] flex flex-col justify-between p-6 overflow-y-auto animate-fade-in font-sans">
       <div className="w-full max-w-sm mx-auto space-y-6 pt-4">
-        {/* Top Logo Badge (matching join.jpg) */}
+        {/* Top Logo Badge */}
         <div className="flex justify-center">
           <div className="w-20 h-20 rounded-full bg-white shadow-md flex items-center justify-center p-3 border border-neutral-200">
-            <FireLogo className="w-12 h-12" />
+            <FireLogo className="w-12 h-12" outerColor="#000000" innerColor="#555555" />
           </div>
         </div>
 
@@ -188,7 +198,7 @@ export const JoinGateModal = () => {
         </div>
       </div>
 
-      {/* Bottom Action: "I've joined" + Disclaimer (matching join.jpg) */}
+      {/* Bottom Action: "I've joined" + Disclaimer */}
       <div className="w-full max-w-sm mx-auto pt-6 pb-2 space-y-2.5">
         <button
           type="button"

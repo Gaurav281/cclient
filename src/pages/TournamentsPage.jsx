@@ -8,6 +8,9 @@ import {
   Gamepad2,
   ChevronRight,
   Play,
+  Copy,
+  Ticket,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/useAuthStore.js';
@@ -15,6 +18,9 @@ import { useTelegram } from '../store/useTelegram.js';
 
 export const TournamentsPage = ({ onOpenDeposit }) => {
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'my' | 'completed'
+  const [friendCodeInput, setFriendCodeInput] = useState('');
+  const [copiedCode, setCopiedCode] = useState(null);
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, updateWalletBalance } = useAuthStore();
@@ -41,7 +47,29 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
     onError: (err) => {
       toast.error(err.message || 'Failed to join tournament');
       haptic.error();
-      if (err.message?.toLowerCase().includes('balance')) {
+      if (err.message?.toLowerCase().includes('balance') || err.message?.toLowerCase().includes('funds')) {
+        onOpenDeposit?.();
+      }
+    },
+  });
+
+  const joinByCodeMutation = useMutation({
+    mutationFn: (code) => tournamentApi.joinTournamentByCode(code),
+    onSuccess: (res) => {
+      toast.success(res.message || 'Joined tournament successfully! Friend got +1 turn.');
+      haptic.success();
+      setFriendCodeInput('');
+      if (res.walletBalance !== undefined) {
+        updateWalletBalance(res.walletBalance);
+      }
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      setActiveTab('my');
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to join with code');
+      haptic.error();
+      if (err.message?.toLowerCase().includes('balance') || err.message?.toLowerCase().includes('funds')) {
         onOpenDeposit?.();
       }
     },
@@ -92,6 +120,35 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
     joinMutation.mutate(tournament._id);
   };
 
+  const handleJoinWithFriendCode = (e) => {
+    e.preventDefault();
+    const cleanCode = friendCodeInput.trim().replace(/\D/g, '');
+    if (!cleanCode || cleanCode.length !== 6) {
+      toast.error('Please enter a valid 6-digit tournament code');
+      return;
+    }
+    haptic.medium();
+    joinByCodeMutation.mutate(cleanCode);
+  };
+
+  const handleCopyCode = (e, code) => {
+    e.stopPropagation();
+    haptic.selection();
+    if (!code) return;
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        setCopiedCode(code);
+        setTimeout(() => setCopiedCode(null), 2500);
+        toast.success(`Code ${code} copied! Share to earn +1 turn!`);
+      }).catch(() => {
+        toast.success(`Code: ${code}`);
+      });
+    } else {
+      toast.success(`Code: ${code}`);
+    }
+  };
+
   const handlePlayTurn = (e, tournament) => {
     e.stopPropagation();
     haptic.light();
@@ -107,7 +164,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
   };
 
   return (
-    <div className="space-y-3.5 pb-24 animate-fade-in">
+    <div className="space-y-3.5 pb-24 animate-fade-in font-sans">
       {/* Practice Car Game Banner */}
       <div
         onClick={() => {
@@ -136,6 +193,39 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
             <span>Practice Now</span>
           </button>
         </div>
+      </div>
+
+      {/* Have a Friend Tournament Code Section */}
+      <div className="rounded-2xl p-3.5 bg-[#0E0E12] border border-white/10 space-y-2.5 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Ticket className="w-4 h-4 text-sky-400" />
+            <span className="font-heading font-bold text-xs sm:text-sm text-white">
+              Have a Friend&apos;s Tournament Code?
+            </span>
+          </div>
+          <span className="text-[10px] text-neutral-400 font-medium">Friend gets +1 turn</span>
+        </div>
+
+        <form onSubmit={handleJoinWithFriendCode} className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            value={friendCodeInput}
+            onChange={(e) => setFriendCodeInput(e.target.value.replace(/\D/g, ''))}
+            placeholder="Enter 6-digit code (e.g. 849201)"
+            className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-white font-mono text-xs placeholder:text-neutral-500 focus:outline-none focus:border-sky-400 tracking-widest"
+          />
+          <button
+            type="submit"
+            disabled={joinByCodeMutation.isPending || !friendCodeInput || friendCodeInput.trim().length !== 6}
+            className="px-4 py-2 rounded-xl blue-gradient-btn font-heading font-extrabold text-xs tracking-wide shrink-0 disabled:opacity-40 transition active:scale-95 shadow-sm"
+          >
+            {joinByCodeMutation.isPending ? 'Joining...' : 'Join'}
+          </button>
+        </form>
       </div>
 
       {/* Premium Neutral Filter Tabs */}
@@ -186,6 +276,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
             const isFull = t.currentParticipantsCount >= t.totalParticipantsAllowed;
             const isEnded = t.hasEnded || t.status === 'DECLARED';
             const totalPrize = t.rewards?.reduce((a, b) => a + b, 0) || 0;
+            const referralCode = t.userParticipation?.referralCode;
 
             return (
               <div
@@ -218,7 +309,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
                   </div>
                 </div>
 
-                {/* Structured Key Details Grid (matching card theme sub-boxes) */}
+                {/* Structured Key Details Grid */}
                 <div className="grid grid-cols-3 gap-2 py-1">
                   <div className="luxury-subcard p-2 text-center rounded-xl">
                     <span className="text-[9px] text-white/60 font-heading font-bold uppercase tracking-wider block">
@@ -278,6 +369,40 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
                     }}
                   />
                 </div>
+
+                {/* Direct 6-Digit Referral Code Card for Joined Users with 1-Tap Copy */}
+                {isJoined && referralCode && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] text-neutral-400 font-heading font-semibold uppercase tracking-wider shrink-0">
+                        Your Code:
+                      </span>
+                      <span className="font-mono font-black text-xs sm:text-sm text-sky-400 tracking-widest bg-black/60 px-2 py-0.5 rounded border border-white/10 truncate">
+                        {referralCode}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyCode(e, referralCode)}
+                      className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-heading font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95 border border-white/15 shrink-0"
+                    >
+                      {copiedCode === referralCode ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3 text-sky-400" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
 
                 {/* Action Button */}
                 <div>

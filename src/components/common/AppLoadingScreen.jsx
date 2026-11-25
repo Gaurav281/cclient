@@ -5,33 +5,43 @@ export const AppLoadingScreen = ({ isVisible, message = 'Preparing circuit & cre
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#070709] flex flex-col items-center justify-center p-6 text-white select-none transition-opacity duration-300">
-      {/* Ambient background glow */}
-      <div className="absolute w-72 h-72 rounded-full bg-amber-400/10 blur-[100px] pointer-events-none" />
+    <div className="fixed inset-0 z-50 bg-[#090A0D] flex flex-col items-center justify-between p-8 text-white select-none transition-opacity duration-300 font-sans">
+      {/* Top Brand Tag */}
+      <div className="pt-6 flex items-center gap-2 text-[10px] uppercase font-mono tracking-[0.3em] text-neutral-500">
+        <span>FIREFLY RACING</span>
+      </div>
 
-      <div className="relative flex flex-col items-center space-y-6 max-w-xs text-center z-10 animate-fade-in">
-        {/* Glowing Logo Badge */}
-        <div className="relative flex items-center justify-center">
-          <div className="w-24 h-24 rounded-3xl bg-black/60 border border-white/10 shadow-2xl shadow-amber-500/10 flex items-center justify-center p-4">
-            <FireLogo className="w-14 h-14 animate-pulse" />
-          </div>
-          <div className="absolute -inset-1 rounded-3xl bg-amber-400/20 blur-md -z-10 animate-pulse" />
+      {/* Center Emblem & Status */}
+      <div className="flex flex-col items-center space-y-7 max-w-xs text-center z-10 w-full animate-fade-in">
+        {/* Minimalist Matte Emblem Badge - No Neon, No Blur */}
+        <div className="w-20 h-20 rounded-2xl bg-[#141519] border border-white/[0.1] shadow-2xl flex items-center justify-center p-4">
+          <FireLogo className="w-11 h-11" outerColor="#FFFFFF" innerColor="#9CA3AF" />
         </div>
 
-        {/* Title */}
-        <div className="space-y-1">
-          <h1 className="font-heading font-black text-2xl tracking-widest text-white">
+        {/* Title & Tagline */}
+        <div className="space-y-1.5">
+          <h1 className="font-heading font-black text-2xl tracking-[0.2em] text-white">
             FIREFLY
           </h1>
-          <p className="text-xs text-neutral-400 font-medium">
-            {message}
+          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-neutral-400">
+            COMPETE &bull; COLLECT &bull; WIN
           </p>
         </div>
 
-        {/* Sleek Animated Progress Bar */}
-        <div className="w-48 h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 rounded-full animate-[progress_1.2s_ease-in-out_infinite]" />
+        {/* Sleek Minimalist Progress Bar (Matte Obsidian Track & Crisp White Bar) */}
+        <div className="w-48 space-y-2.5">
+          <div className="w-full h-1 bg-white/[0.08] rounded-full overflow-hidden relative">
+            <div className="h-full bg-white rounded-full animate-[progress_1.3s_ease-in-out_infinite]" />
+          </div>
+          <p className="text-[11px] text-neutral-400 font-medium tracking-wide">
+            {message}
+          </p>
         </div>
+      </div>
+
+      {/* Clean Bottom Footer */}
+      <div className="pb-4 text-[10px] font-mono text-neutral-600 tracking-widest uppercase">
+        SECURE TELEGRAM PROTOCOL
       </div>
     </div>
   );

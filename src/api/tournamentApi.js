@@ -10,9 +10,18 @@ export const tournamentApi = {
   },
 
   joinTournament: async (tournamentId, referralCode) => {
-    return await apiRequest(`/api/tournaments/${tournamentId}/join`, {
+    const id = typeof tournamentId === 'object' ? tournamentId.tournamentId : tournamentId;
+    const code = typeof tournamentId === 'object' ? tournamentId.referralCode : referralCode;
+    return await apiRequest(`/api/tournaments/${id}/join`, {
       method: 'POST',
-      body: referralCode ? { referralCode } : {},
+      body: code ? { referralCode: code } : {},
+    });
+  },
+
+  joinTournamentByCode: async (referralCode) => {
+    return await apiRequest('/api/tournaments/join-by-code', {
+      method: 'POST',
+      body: { referralCode },
     });
   },
 };
