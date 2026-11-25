@@ -13,14 +13,12 @@ export const AppLoadingScreen = ({ isVisible, message = 'Preparing circuit & cre
 
       {/* Center Emblem & Status */}
       <div className="flex flex-col items-center space-y-7 max-w-xs text-center z-10 w-full animate-fade-in">
-        {/* Minimalist Matte Emblem Badge with Animated Mascot Eyes */}
-        <div className="w-24 h-24 rounded-3xl bg-[#141519] border border-white/[0.1] shadow-2xl flex items-center justify-center p-4">
+        {/* Luxury Matte Emblem Badge - Bigger & Better Fire Flame */}
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-[#131418] border border-white/[0.12] shadow-2xl flex items-center justify-center p-4 transition-all">
           <FireLogo
-            className="w-14 h-14"
+            className="w-18 h-18 sm:w-20 sm:h-20 animate-[pulseSubtle_2.8s_ease-in-out_infinite]"
             outerColor="#F59E0B"
-            innerColor="#FDE68A"
-            hasEyes={true}
-            animatedEyes={true}
+            innerColor="#FEF3C7"
           />
         </div>
 

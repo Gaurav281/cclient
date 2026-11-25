@@ -41,8 +41,9 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     score: 0,
     diamondsCollected: 0,
     distance: 0,
-    speed: 6,
-    baseSpeed: 6,
+    speed: 3.2,
+    baseSpeed: 3.2,
+    maxSpeed: 5.8,
     playerLane: 1, // 0: Left, 1: Center, 2: Right
     playerX: 0,
     targetX: 0,
@@ -55,6 +56,56 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     lastDiamondSpawn: 0,
     shake: 0,
   });
+
+  // 3-Second Game Start Countdown
+  const [countdown, setCountdown] = useState(3);
+  const countdownRef = useRef(3);
+  const countdownTimersRef = useRef([]);
+
+  const clearCountdownTimers = useCallback(() => {
+    countdownTimersRef.current.forEach((t) => clearTimeout(t));
+    countdownTimersRef.current = [];
+  }, []);
+
+  const startCountdown = useCallback(() => {
+    clearCountdownTimers();
+    countdownRef.current = 3;
+    setCountdown(3);
+    haptic.medium();
+
+    const t1 = setTimeout(() => {
+      countdownRef.current = 2;
+      setCountdown(2);
+      soundManager.playLaneChange();
+      haptic.medium();
+    }, 1000);
+
+    const t2 = setTimeout(() => {
+      countdownRef.current = 1;
+      setCountdown(1);
+      soundManager.playLaneChange();
+      haptic.medium();
+    }, 2000);
+
+    const t3 = setTimeout(() => {
+      countdownRef.current = 'GO!';
+      setCountdown('GO!');
+      soundManager.playDiamond();
+      haptic.heavy();
+    }, 3000);
+
+    const t4 = setTimeout(() => {
+      countdownRef.current = null;
+      setCountdown(null);
+    }, 3700);
+
+    countdownTimersRef.current = [t1, t2, t3, t4];
+  }, [haptic, clearCountdownTimers]);
+
+  useEffect(() => {
+    startCountdown();
+    return () => clearCountdownTimers();
+  }, [startCountdown, clearCountdownTimers]);
 
   const [gameState, setGameState] = useState({
     score: 0,
@@ -76,7 +127,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   };
 
   const togglePause = useCallback(() => {
-    if (stateRef.current.isGameOver) return;
+    if (stateRef.current.isGameOver || countdownRef.current !== null) return;
     setIsPaused((prev) => {
       const next = !prev;
       isPausedRef.current = next;
@@ -86,7 +137,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   }, [haptic]);
 
   const openSettings = useCallback(() => {
-    if (stateRef.current.isRunning && !stateRef.current.isGameOver) {
+    if (stateRef.current.isRunning && !stateRef.current.isGameOver && countdownRef.current === null) {
       setIsPaused(true);
       isPausedRef.current = true;
     }
@@ -105,7 +156,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   // Change lane handler
   const moveLane = useCallback((direction) => {
     const s = stateRef.current;
-    if (!s.isRunning || s.isGameOver || isPausedRef.current) return;
+    if (!s.isRunning || s.isGameOver || isPausedRef.current || countdownRef.current !== null) return;
 
     if (direction === 'left' && s.playerLane > 0) {
       s.playerLane -= 1;
@@ -123,7 +174,7 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   // Handle direct lane tap (for screen click / tap mode)
   const handleLaneTap = useCallback((clientX) => {
     const s = stateRef.current;
-    if (!s.isRunning || s.isGameOver || isPausedRef.current) return;
+    if (!s.isRunning || s.isGameOver || isPausedRef.current || countdownRef.current !== null) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -143,11 +194,13 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
   const touchStartRef = useRef({ x: 0, y: 0 });
 
   const handleTouchStart = (e) => {
+    if (countdownRef.current !== null) return;
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
   const handleTouchEnd = (e) => {
+    if (countdownRef.current !== null) return;
     const touch = e.changedTouches[0];
     const dx = touch.clientX - touchStartRef.current.x;
     const dy = touch.clientY - touchStartRef.current.y;
@@ -248,7 +301,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     s.score = 0;
     s.diamondsCollected = 0;
     s.distance = 0;
-    s.speed = 6;
+    s.speed = 3.2;
+    s.baseSpeed = 3.2;
     s.playerLane = 1;
     s.traffic = [];
     s.diamonds = [];
@@ -292,147 +346,157 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       const carH = carW * 1.75;
 
       if (!s.isGameOver) {
-        // Increment distance & speed gradually
-        s.distance += s.speed * 0.1;
-        s.speed = s.baseSpeed + Math.min(10, Math.floor(s.distance / 120) * 0.6);
-        s.score = Math.floor(s.distance) + s.diamondsCollected * 50;
-
-        // Real-time live HUD update (smooth ~12-15 fps updates so points increment visibly during play)
-        if (currentTime - lastHudTime > 75 || s.diamondsCollected !== lastReportedDiamonds) {
-          lastHudTime = currentTime;
-          lastReportedDiamonds = s.diamondsCollected;
-          setLiveHud({
-            score: s.score,
-            diamonds: s.diamondsCollected,
-          });
-        }
-
-        // Animate road stripes
-        s.roadOffset = (s.roadOffset + s.speed) % 60;
-
-        // Spawn Traffic Cars
-        if (currentTime - s.lastTrafficSpawn > Math.max(1200, 2600 - s.speed * 110)) {
-          const lane = Math.floor(Math.random() * 3);
-          const colors = ['#EF4444', '#F59E0B', '#3B82F6', '#EC4899'];
-          const carColor = colors[Math.floor(Math.random() * colors.length)];
-          const trafficSpeed = s.speed * (0.35 + Math.random() * 0.25);
-
-          s.traffic.push({
-            lane,
-            x: laneCenters[lane],
-            y: -carH - 20,
-            speed: trafficSpeed,
-            color: carColor,
-            width: carW,
-            height: carH,
-          });
+        if (countdownRef.current !== null) {
+          // While in 3-second countdown: keep car in place, delay traffic and diamonds
           s.lastTrafficSpawn = currentTime;
-        }
-
-        // Spawn Diamonds
-        if (currentTime - s.lastDiamondSpawn > Math.max(1600, 3200 - s.speed * 90)) {
-          const availableLanes = [0, 1, 2];
-          const diamondLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
-
-          s.diamonds.push({
-            lane: diamondLane,
-            x: laneCenters[diamondLane],
-            y: -40,
-            radius: 14,
-            rotation: 0,
-          });
           s.lastDiamondSpawn = currentTime;
-        }
+          // Road rolls at low idle speed
+          s.roadOffset = (s.roadOffset + 1.2) % 60;
+        } else {
+          // Increment distance & speed smoothly
+          s.distance += s.speed * 0.08;
+          // Gradual speed increase: starts at 3.2, increases by +0.25 every 180 distance units,
+          // then stays constant at 5.8 so it never becomes too fast!
+          s.speed = Math.min(5.8, s.baseSpeed + Math.floor(s.distance / 180) * 0.25);
+          s.score = Math.floor(s.distance) + s.diamondsCollected * 50;
 
-        // Update Traffic
-        for (let i = s.traffic.length - 1; i >= 0; i--) {
-          const t = s.traffic[i];
-          t.y += s.speed - t.speed;
-
-          // Check Collision with Player Car
-          const hitX = Math.abs(s.playerX - t.x) < (carW * 0.78);
-          const hitY = Math.abs(playerY - t.y) < (carH * 0.82);
-
-          if (hitX && hitY) {
-            // Collision occurred!
-            s.isGameOver = true;
-            s.shake = 22;
-            soundManager.playCrash();
-            soundManager.playGameOver();
-            haptic.heavy();
-
-            // Spawn crash debris particles
-            for (let p = 0; p < 30; p++) {
-              s.particles.push({
-                x: s.playerX,
-                y: playerY,
-                vx: (Math.random() - 0.5) * 16,
-                vy: (Math.random() - 0.5) * 16,
-                color: Math.random() > 0.5 ? '#A855F7' : '#EF4444',
-                size: Math.random() * 6 + 2,
-                life: 1.0,
-              });
-            }
-
-            const finalScore = s.score;
-            const finalDiamonds = s.diamondsCollected;
-            const finalDistance = Math.floor(s.distance);
-
-            setGameState({
-              score: finalScore,
-              diamonds: finalDiamonds,
-              distance: finalDistance,
-              isGameOver: true,
-              isSubmitting: Boolean(tournament),
-              submissionResult: null,
+          // Real-time live HUD update (smooth ~12-15 fps updates so points increment visibly during play)
+          if (currentTime - lastHudTime > 75 || s.diamondsCollected !== lastReportedDiamonds) {
+            lastHudTime = currentTime;
+            lastReportedDiamonds = s.diamondsCollected;
+            setLiveHud({
+              score: s.score,
+              diamonds: s.diamondsCollected,
             });
-
-            // If in a tournament, automatically submit score directly when user gets out
-            if (tournament) {
-              submitRef.current?.(finalScore, finalDiamonds, finalDistance);
-            }
-            break;
           }
 
-          if (t.y > height + 100) {
-            s.traffic.splice(i, 1);
+          // Animate road stripes
+          s.roadOffset = (s.roadOffset + s.speed) % 60;
+
+          // Spawn Traffic Cars (paced comfortably for readable reaction times)
+          if (currentTime - s.lastTrafficSpawn > Math.max(1400, 2800 - s.speed * 90)) {
+            const lane = Math.floor(Math.random() * 3);
+            const colors = ['#EF4444', '#F59E0B', '#3B82F6', '#EC4899'];
+            const carColor = colors[Math.floor(Math.random() * colors.length)];
+            const trafficSpeed = s.speed * (0.35 + Math.random() * 0.25);
+
+            s.traffic.push({
+              lane,
+              x: laneCenters[lane],
+              y: -carH - 20,
+              speed: trafficSpeed,
+              color: carColor,
+              width: carW,
+              height: carH,
+            });
+            s.lastTrafficSpawn = currentTime;
           }
-        }
 
-        // Update Diamonds
-        for (let i = s.diamonds.length - 1; i >= 0; i--) {
-          const d = s.diamonds[i];
-          d.y += s.speed;
-          d.rotation += 0.05;
+          // Spawn Diamonds
+          if (currentTime - s.lastDiamondSpawn > Math.max(1400, 2700 - s.speed * 80)) {
+            const availableLanes = [0, 1, 2];
+            const diamondLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
 
-          // Collection check
-          const collectX = Math.abs(s.playerX - d.x) < (carW * 0.8 + d.radius);
-          const collectY = Math.abs(playerY - d.y) < (carH * 0.7 + d.radius);
+            s.diamonds.push({
+              lane: diamondLane,
+              x: laneCenters[diamondLane],
+              y: -40,
+              radius: 14,
+              rotation: 0,
+            });
+            s.lastDiamondSpawn = currentTime;
+          }
 
-          if (collectX && collectY) {
-            s.diamondsCollected += 1;
-            soundManager.playDiamond();
-            haptic.success();
+          // Update Traffic
+          for (let i = s.traffic.length - 1; i >= 0; i--) {
+            const t = s.traffic[i];
+            t.y += s.speed - t.speed;
 
-            // Gem sparkle particles
-            for (let p = 0; p < 14; p++) {
-              s.particles.push({
-                x: d.x,
-                y: d.y,
-                vx: (Math.random() - 0.5) * 10,
-                vy: (Math.random() - 0.5) * 10,
-                color: '#38BDF8',
-                size: Math.random() * 4 + 2,
-                life: 0.8,
+            // Check Collision with Player Car
+            const hitX = Math.abs(s.playerX - t.x) < (carW * 0.78);
+            const hitY = Math.abs(playerY - t.y) < (carH * 0.82);
+
+            if (hitX && hitY) {
+              // Collision occurred!
+              s.isGameOver = true;
+              s.shake = 22;
+              soundManager.playCrash();
+              soundManager.playGameOver();
+              haptic.heavy();
+
+              // Spawn crash debris particles
+              for (let p = 0; p < 30; p++) {
+                s.particles.push({
+                  x: s.playerX,
+                  y: playerY,
+                  vx: (Math.random() - 0.5) * 16,
+                  vy: (Math.random() - 0.5) * 16,
+                  color: Math.random() > 0.5 ? '#A855F7' : '#EF4444',
+                  size: Math.random() * 6 + 2,
+                  life: 1.0,
+                });
+              }
+
+              const finalScore = s.score;
+              const finalDiamonds = s.diamondsCollected;
+              const finalDistance = Math.floor(s.distance);
+
+              setGameState({
+                score: finalScore,
+                diamonds: finalDiamonds,
+                distance: finalDistance,
+                isGameOver: true,
+                isSubmitting: Boolean(tournament),
+                submissionResult: null,
               });
+
+              // If in a tournament, automatically submit score directly when user gets out
+              if (tournament) {
+                submitRef.current?.(finalScore, finalDiamonds, finalDistance);
+              }
+              break;
             }
 
-            s.diamonds.splice(i, 1);
-            continue;
+            if (t.y > height + 100) {
+              s.traffic.splice(i, 1);
+            }
           }
 
-          if (d.y > height + 60) {
-            s.diamonds.splice(i, 1);
+          // Update Diamonds
+          for (let i = s.diamonds.length - 1; i >= 0; i--) {
+            const d = s.diamonds[i];
+            d.y += s.speed;
+            d.rotation += 0.05;
+
+            // Collection check
+            const collectX = Math.abs(s.playerX - d.x) < (carW * 0.8 + d.radius);
+            const collectY = Math.abs(playerY - d.y) < (carH * 0.7 + d.radius);
+
+            if (collectX && collectY) {
+              s.diamondsCollected += 1;
+              soundManager.playDiamond();
+              haptic.success();
+
+              // Gem sparkle particles
+              for (let p = 0; p < 14; p++) {
+                s.particles.push({
+                  x: d.x,
+                  y: d.y,
+                  vx: (Math.random() - 0.5) * 10,
+                  vy: (Math.random() - 0.5) * 10,
+                  color: '#38BDF8',
+                  size: Math.random() * 4 + 2,
+                  life: 0.8,
+                });
+              }
+
+              s.diamonds.splice(i, 1);
+              continue;
+            }
+
+            if (d.y > height + 60) {
+              s.diamonds.splice(i, 1);
+            }
           }
         }
       }
@@ -670,7 +734,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     s.score = 0;
     s.diamondsCollected = 0;
     s.distance = 0;
-    s.speed = 6;
+    s.speed = 3.2;
+    s.baseSpeed = 3.2;
     s.playerLane = 1;
     s.traffic = [];
     s.diamonds = [];
@@ -686,6 +751,8 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
       submissionResult: null,
     });
     setLiveHud({ score: 0, diamonds: 0 });
+
+    startCountdown();
   };
 
   const displayTurns = gameState.submissionResult?.turnsLeft ?? turnsLeft;
@@ -771,6 +838,33 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
         }}
       >
         <canvas ref={canvasRef} className="w-full h-full block" />
+
+        {/* 3-Second Game Start Countdown Overlay */}
+        {countdown !== null && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none select-none">
+            <div
+              key={countdown}
+              className="flex flex-col items-center justify-center animate-[scaleIn_0.35s_cubic-bezier(0.175,0.885,0.32,1.275)]"
+            >
+              <div className="w-28 h-28 rounded-3xl bg-black/85 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl shadow-black/90">
+                <span
+                  className={`font-heading font-black tracking-tight ${
+                    countdown === 'GO!'
+                      ? 'text-4xl text-emerald-400'
+                      : 'text-6xl text-amber-400'
+                  }`}
+                >
+                  {countdown}
+                </span>
+              </div>
+              <div className="mt-3.5 px-3.5 py-1 rounded-full bg-black/80 border border-white/10 text-center shadow-lg">
+                <span className="text-[11px] font-mono uppercase tracking-[0.25em] text-neutral-300 font-bold">
+                  {countdown === 'GO!' ? 'RACE IS ON!' : 'GET READY'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Controls / Lane Guide */}
