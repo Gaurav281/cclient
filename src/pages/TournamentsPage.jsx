@@ -56,7 +56,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
   const joinByCodeMutation = useMutation({
     mutationFn: (code) => tournamentApi.joinTournamentByCode(code),
     onSuccess: (res) => {
-      toast.success(res.message || 'Joined tournament successfully! Friend got +1 turn.');
+      toast.success(res.message || 'Joined tournament successfully! Both of you got +1 extra turn.');
       haptic.success();
       setFriendCodeInput('');
       if (res.walletBalance !== undefined) {
@@ -140,7 +140,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
       navigator.clipboard.writeText(code).then(() => {
         setCopiedCode(code);
         setTimeout(() => setCopiedCode(null), 2500);
-        toast.success(`Code ${code} copied! Share to earn +1 turn!`);
+        toast.success(`Code ${code} copied! Share with friends — both get +1 extra turn!`);
       }).catch(() => {
         toast.success(`Code: ${code}`);
       });
@@ -204,7 +204,7 @@ export const TournamentsPage = ({ onOpenDeposit }) => {
               Have a Friend&apos;s Tournament Code?
             </span>
           </div>
-          <span className="text-[10px] text-neutral-400 font-medium">Friend gets +1 turn</span>
+          <span className="text-[10px] text-neutral-400 font-medium">Both get +1 turn</span>
         </div>
 
         <form onSubmit={handleJoinWithFriendCode} className="flex items-center gap-2">

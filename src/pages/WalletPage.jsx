@@ -11,9 +11,7 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Trophy,
   RefreshCw,
-  Sparkles,
 } from 'lucide-react';
 import { useTelegram } from '../store/useTelegram.js';
 
@@ -110,35 +108,8 @@ export const WalletPage = () => {
             <span className="text-xs font-bold text-white/60 tracking-wider">INR</span>
           </div>
           <p className="text-xs text-white/70 font-medium leading-relaxed">
-            Points at live tournament rate, plus cash ready to withdraw
+            Available funds ready to join tournaments or withdraw
           </p>
-        </div>
-
-        {/* Dual Sub-boxes (POINTS / USDT equivalent in card theme.jpg) */}
-        <div className="grid grid-cols-2 gap-2.5 pt-1">
-          <div className="luxury-subcard p-3 rounded-2xl space-y-1">
-            <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
-              TOTAL EARNINGS
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="font-heading font-extrabold text-sm sm:text-base text-white">
-                ₹{(user?.totalEarnings || 0).toLocaleString('en-IN')}
-              </span>
-            </div>
-          </div>
-
-          <div className="luxury-subcard p-3 rounded-2xl space-y-1">
-            <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
-              TOURNAMENTS WON
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
-              <span className="font-heading font-extrabold text-sm sm:text-base text-white">
-                {user?.tournamentsWon || 0} Wins
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 

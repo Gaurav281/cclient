@@ -138,7 +138,7 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
   const handleShareOnTelegram = () => {
     const code = tournament?.userParticipation?.referralCode;
     if (!code) return;
-    const shareText = `🏎️ Race with me in "${tournament.title}" on Firefly! Use my code [ ${code} ] when joining to get extra turns! 🏆\nPlay here: https://t.me/FireflyPlayBot/play`;
+    const shareText = `🏎️ Race with me in "${tournament.title}" on Firefly! Use my code [ ${code} ] when joining — both of us get +1 extra turn! 🏆\nPlay here: https://t.me/FireflyPlayBot/play`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/FireflyPlayBot/play')}&text=${encodeURIComponent(shareText)}`;
 
     const tg = window.Telegram?.WebApp;
@@ -252,12 +252,12 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
                 onClick={() => setShowReferralInput(true)}
                 className="text-[11px] text-sky-400 hover:underline flex items-center justify-center gap-1 w-full"
               >
-                <span>Have a friend&apos;s 6-digit referral code?</span>
+                <span>Have a friend&apos;s 6-digit referral code? Both get +1 turn!</span>
               </button>
             ) : (
               <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5">
                 <label className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/60 block">
-                  Friend&apos;s 6-Digit Referral Code (Optional)
+                  Friend&apos;s 6-Digit Code (Both Get +1 Extra Turn)
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -308,7 +308,7 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-heading font-extrabold uppercase tracking-widest text-white/70">
-              REFERRAL CODE (EARN +1 TURN)
+              REFERRAL CODE (BOTH GET +1 TURN)
             </span>
             {(tournament.userParticipation?.referralBonusTurnsEarned || 0) > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
@@ -344,13 +344,13 @@ export const TournamentDetailPage = ({ onOpenDeposit }) => {
           <p className="text-[11px] text-white/70 leading-relaxed">
             {turnsLeft === 0 ? (
               <span className="text-amber-300 font-medium">
-                ⚠️ Out of turns? Share your 6-digit code! Every time someone joins using your code, you get{' '}
-                <strong className="text-white font-bold">+1 EXTRA TURN</strong> immediately! 🏎️💨
+                ⚠️ Out of turns? Share your 6-digit code! Whenever someone joins using your code,{' '}
+                <strong className="text-white font-bold">BOTH OF YOU GET +1 EXTRA TURN</strong> immediately! 🏎️💨
               </span>
             ) : (
               <span>
-                Share your code with other racers. Whenever someone joins using your code, you get{' '}
-                <strong className="text-amber-400 font-bold">+1 EXTRA TURN</strong> automatically!
+                Share your code with other racers. Whenever someone joins using your code,{' '}
+                <strong className="text-amber-400 font-bold">BOTH OF YOU GET +1 EXTRA TURN</strong> automatically!
               </span>
             )}
           </p>
