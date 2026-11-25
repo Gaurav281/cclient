@@ -102,10 +102,12 @@ export const CarGame = ({ tournament, onScoreSubmit, onExit, turnsLeft = null })
     countdownTimersRef.current = [t1, t2, t3, t4];
   }, [haptic, clearCountdownTimers]);
 
+  // Run countdown strictly once on mount
   useEffect(() => {
     startCountdown();
     return () => clearCountdownTimers();
-  }, [startCountdown, clearCountdownTimers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [gameState, setGameState] = useState({
     score: 0,
